@@ -1,0 +1,75 @@
+{
+  "cli": {
+    "version": "18.3.0",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "development": {
+      "node": "20.19.4",
+      "environment": "development",
+      "env": {
+        "APP_ENV": "development",
+        "NODE_ENV": "development"
+      },
+      "developmentClient": true,
+      "android": {
+        "buildType": "apk"
+      },
+      "distribution": "internal"
+    },
+    "adhoc": {
+      "node": "20.19.4",
+      "environment": "preview",
+      "env": {
+        "APP_ENV": "preview",
+        "NODE_ENV": "production"
+      },
+      "ios": {
+        "distribution": "internal"
+      }
+    },
+    "production": {
+      "node": "20.19.4",
+      "environment": "production",
+      "env": {
+        "APP_ENV": "production",
+        "NODE_ENV": "production"
+      },
+      "credentialsSource": "local",
+      "ios": {
+        "image": "macos-sequoia-15.5-xcode-16.4",
+        "resourceClass": "large"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      }
+    },
+    "ios-store": {
+      "node": "20.19.4",
+      "environment": "production",
+      "env": {
+        "APP_ENV": "production",
+        "NODE_ENV": "production"
+      },
+      "ios": {
+        "image": "macos-sequoia-15.5-xcode-16.4",
+        "resourceClass": "large"
+      }
+    },
+    "apk": {
+      "node": "20.19.4",
+      "environment": "preview",
+      "env": {
+        "APP_ENV": "preview",
+        "NODE_ENV": "production"
+      },
+      "credentialsSource": "local",
+      "android": {
+        "buildType": "apk"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

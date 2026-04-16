@@ -1,0 +1,175 @@
+diff --git a/node_modules/react-native-ble-plx/android/src/main/java/com/bleplx/BlePlxModule.java b/node_modules/react-native-ble-plx/android/src/main/java/com/bleplx/BlePlxModule.java
+index c731640..cc74e84 100644
+--- a/node_modules/react-native-ble-plx/android/src/main/java/com/bleplx/BlePlxModule.java
++++ b/node_modules/react-native-ble-plx/android/src/main/java/com/bleplx/BlePlxModule.java
+@@ -168,7 +168,7 @@ public class BlePlxModule extends ReactContextBaseJavaModule {
+     }, new OnErrorCallback() {
+       @Override
+       public void onError(BleError error) {
+-        safePromise.reject(null, errorConverter.toJs(error));
++        safePromise.reject("BlePlxError", errorConverter.toJs(error));
+       }
+     });
+   }
+@@ -187,7 +187,7 @@ public class BlePlxModule extends ReactContextBaseJavaModule {
+     }, new OnErrorCallback() {
+       @Override
+       public void onError(BleError error) {
+-        safePromise.reject(null, errorConverter.toJs(error));
++        safePromise.reject("BlePlxError", errorConverter.toJs(error));
+       }
+     });
+   }
+@@ -318,7 +318,7 @@ public class BlePlxModule extends ReactContextBaseJavaModule {
+       }, new OnErrorCallback() {
+         @Override
+         public void onError(BleError error) {
+-          safePromise.reject(null, errorConverter.toJs(error));
++          safePromise.reject("BlePlxError", errorConverter.toJs(error));
+         }
+       });
+   }
+@@ -338,7 +338,7 @@ public class BlePlxModule extends ReactContextBaseJavaModule {
+       }, new OnErrorCallback() {
+         @Override
+         public void onError(BleError error) {
+-          safePromise.reject(null, errorConverter.toJs(error));
++          safePromise.reject("BlePlxError", errorConverter.toJs(error));
+         }
+       });
+   }
+@@ -358,7 +358,7 @@ public class BlePlxModule extends ReactContextBaseJavaModule {
+       }, new OnErrorCallback() {
+         @Override
+         public void onError(BleError error) {
+-          safePromise.reject(null, errorConverter.toJs(error));
++          safePromise.reject("BlePlxError", errorConverter.toJs(error));
+         }
+       });
+   }
+@@ -422,7 +422,7 @@ public class BlePlxModule extends ReactContextBaseJavaModule {
+       new OnErrorCallback() {
+         @Override
+         public void onError(BleError error) {
+-          safePromise.reject(null, errorConverter.toJs(error));
++          safePromise.reject("BlePlxError", errorConverter.toJs(error));
+         }
+       });
+   }
+@@ -442,7 +442,7 @@ public class BlePlxModule extends ReactContextBaseJavaModule {
+       }, new OnErrorCallback() {
+         @Override
+         public void onError(BleError error) {
+-          safePromise.reject(null, errorConverter.toJs(error));
++          safePromise.reject("BlePlxError", errorConverter.toJs(error));
+         }
+       });
+   }
+@@ -483,7 +483,7 @@ public class BlePlxModule extends ReactContextBaseJavaModule {
+       }, new OnErrorCallback() {
+         @Override
+         public void onError(BleError error) {
+-          safePromise.reject(null, errorConverter.toJs(error));
++          safePromise.reject("BlePlxError", errorConverter.toJs(error));
+         }
+       });
+   }
+@@ -627,7 +627,7 @@ public class BlePlxModule extends ReactContextBaseJavaModule {
+       }, new OnErrorCallback() {
+         @Override
+         public void onError(BleError error) {
+-          safePromise.reject(null, errorConverter.toJs(error));
++          safePromise.reject("BlePlxError", errorConverter.toJs(error));
+         }
+       }
+     );
+@@ -654,7 +654,7 @@ public class BlePlxModule extends ReactContextBaseJavaModule {
+       }, new OnErrorCallback() {
+         @Override
+         public void onError(BleError error) {
+-          safePromise.reject(null, errorConverter.toJs(error));
++          safePromise.reject("BlePlxError", errorConverter.toJs(error));
+         }
+       }
+     );
+@@ -680,7 +680,7 @@ public class BlePlxModule extends ReactContextBaseJavaModule {
+       }, new OnErrorCallback() {
+         @Override
+         public void onError(BleError error) {
+-          safePromise.reject(null, errorConverter.toJs(error));
++          safePromise.reject("BlePlxError", errorConverter.toJs(error));
+         }
+       });
+   }
+@@ -706,7 +706,7 @@ public class BlePlxModule extends ReactContextBaseJavaModule {
+       }, new OnErrorCallback() {
+         @Override
+         public void onError(BleError error) {
+-          safePromise.reject(null, errorConverter.toJs(error));
++          safePromise.reject("BlePlxError", errorConverter.toJs(error));
+         }
+       }
+     );
+@@ -732,7 +732,7 @@ public class BlePlxModule extends ReactContextBaseJavaModule {
+       }, new OnErrorCallback() {
+         @Override
+         public void onError(BleError error) {
+-          safePromise.reject(null, errorConverter.toJs(error));
++          safePromise.reject("BlePlxError", errorConverter.toJs(error));
+         }
+       }
+     );
+@@ -757,7 +757,7 @@ public class BlePlxModule extends ReactContextBaseJavaModule {
+       }, new OnErrorCallback() {
+         @Override
+         public void onError(BleError error) {
+-          safePromise.reject(null, errorConverter.toJs(error));
++          safePromise.reject("BlePlxError", errorConverter.toJs(error));
+         }
+       }
+     );
+@@ -788,7 +788,7 @@ public class BlePlxModule extends ReactContextBaseJavaModule {
+       }, new OnErrorCallback() {
+         @Override
+         public void onError(BleError error) {
+-          safePromise.reject(null, errorConverter.toJs(error));
++          safePromise.reject("BlePlxError", errorConverter.toJs(error));
+         }
+       }
+     );
+@@ -818,7 +818,7 @@ public class BlePlxModule extends ReactContextBaseJavaModule {
+       }, new OnErrorCallback() {
+         @Override
+         public void onError(BleError error) {
+-          safePromise.reject(null, errorConverter.toJs(error));
++          safePromise.reject("BlePlxError", errorConverter.toJs(error));
+         }
+       }
+     );
+diff --git a/node_modules/react-native-ble-plx/android/src/main/java/com/bleplx/utils/SafePromise.java b/node_modules/react-native-ble-plx/android/src/main/java/com/bleplx/utils/SafePromise.java
+index 0203473..7bf0dbb 100644
+--- a/node_modules/react-native-ble-plx/android/src/main/java/com/bleplx/utils/SafePromise.java
++++ b/node_modules/react-native-ble-plx/android/src/main/java/com/bleplx/utils/SafePromise.java
+@@ -22,19 +22,19 @@ public class SafePromise {
+ 
+   public void reject(String code, String message) {
+     if (isFinished.compareAndSet(false, true)) {
+-      promise.reject(code, message);
++      promise.reject(code != null ? code : "BlePlxError", message);
+     }
+   }
+ 
+   public void reject(String code, Throwable e) {
+     if (isFinished.compareAndSet(false, true)) {
+-      promise.reject(code, e);
++      promise.reject(code != null ? code : "BlePlxError", e);
+     }
+   }
+ 
+   public void reject(String code, String message, Throwable e) {
+     if (isFinished.compareAndSet(false, true)) {
+-      promise.reject(code, message, e);
++      promise.reject(code != null ? code : "BlePlxError", message, e);
+     }
+   }
+ 
