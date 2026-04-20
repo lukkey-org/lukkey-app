@@ -616,8 +616,10 @@ const AssetsWalletPage = ({
     setIsJiggleMode((prev) => !prev);
   }, [isClosing, isOpening, modalVisible]);
 
-  const handleCardDragReady = React.useCallback((_card, index) => {
+  const handleCardDragReady = React.useCallback((_card, _index) => {
+    isDragReadyRef.current = true;
     setIsDragReady(true);
+    setIsScrollEnabled(false);
   }, []);
 
   const stopAutoScroll = React.useCallback(() => {
@@ -631,17 +633,11 @@ const AssetsWalletPage = ({
   React.useEffect(() => {
     if (!isJiggleMode) {
       stopAutoScroll();
+      isDragReadyRef.current = false;
       setIsDragReady(false);
+      setIsScrollEnabled(true);
     }
   }, [isJiggleMode, stopAutoScroll]);
-
-  React.useEffect(() => {
-    if (isDragReady) {
-      setIsScrollEnabled(false);
-      return;
-    }
-    setIsScrollEnabled(true);
-  }, [isDragReady]);
 
   React.useEffect(() => {
     isJiggleModeRef.current = isJiggleMode;
@@ -1072,7 +1068,9 @@ const AssetsWalletPage = ({
   const handleCardDragEnd = React.useCallback(
     () => {
       stopAutoScroll();
+      isDragReadyRef.current = false;
       setIsDragReady(false);
+      setIsScrollEnabled(true);
       if (!isJiggleModeRef.current) return;
     },
     [stopAutoScroll],

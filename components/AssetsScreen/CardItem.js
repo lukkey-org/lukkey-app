@@ -422,6 +422,7 @@ const CardItem = ({
           }).start();
         },
         onPanResponderTerminate: () => {
+          onCardDragEnd?.({ card, index, dy: 0, moveY: 0, terminated: true });
           clearDragHoldTimer();
           dragReadyRef.current = false;
           if (scrollLock) {
@@ -644,6 +645,7 @@ const CardItem = ({
               {...(shouldJiggle ? panResponder.panHandlers : {})}
               onTouchStart={startDragHoldTimer}
               onTouchEnd={() => {
+                const wasDragReady = dragReadyRef.current;
                 cancelDragHoldTimer();
                 if (!shouldJiggle) return;
                 if (skipNextJiggleTapToggleRef.current) {
@@ -651,7 +653,7 @@ const CardItem = ({
                   console.log("[BATCH_DELETE][CARD] touchEnd skipped(icon)");
                   return;
                 }
-                if (!dragReadyRef.current) {
+                if (!wasDragReady) {
                   console.log("[BATCH_DELETE][CARD] card touchEnd toggle", {
                     name: card?.name || card?.shortName,
                     index,
