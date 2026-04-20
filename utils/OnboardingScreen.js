@@ -210,6 +210,7 @@ const OnboardingScreen = ({ onDone }) => {
     if (Platform.OS !== "ios") return;
     if (!showPermissionStep) return;
     if (!iosBleProbeReady) return;
+    if (!iosBleProbeEnabled) return;
 
     let unsub = null;
     try {
@@ -239,6 +240,7 @@ const OnboardingScreen = ({ onDone }) => {
     };
   }, [
     bleManagerRef,
+    iosBleProbeEnabled,
     iosBleProbeReady,
     markIosBlePermissionDecided,
     showPermissionStep,
@@ -255,14 +257,22 @@ const OnboardingScreen = ({ onDone }) => {
         nextState === "active"
       ) {
         refreshNotifStatus();
-        refreshBlePermStatus({ forceIosProbe: Platform.OS === "ios" });
+        refreshBlePermStatus({
+          forceIosProbe: Platform.OS === "ios" && iosBleProbeEnabled,
+        });
       }
     });
 
     return () => {
       sub?.remove?.();
     };
-  }, [iosBleProbeReady, refreshBlePermStatus, refreshNotifStatus, showPermissionStep]);
+  }, [
+    iosBleProbeEnabled,
+    iosBleProbeReady,
+    refreshBlePermStatus,
+    refreshNotifStatus,
+    showPermissionStep,
+  ]);
 
   // Android navigation bar background and button style settings to avoid white areas at the bottom
   useEffect(() => {
