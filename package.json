@@ -3,11 +3,10 @@
   "version": "0.0.7",
   "scripts": {
     "Step1_installlegacy": "yarn install",
-    "Step2_prebuild": "cross-env LANG=en_US.UTF-8 npx expo prebuild --clean",
-    "Step3_podinstall": "cd ios && cross-env LANG=en_US.UTF-8 pod install && cd ..",
+    "Step2_prebuild": "cross-env LANG=en_US.UTF-8 npx expo prebuild . --clean --no-install",
+    "Step3_podinstall": "cross-env LANG=en_US.UTF-8 pod install --project-directory=ios",
     "Step4.1_ios": "expo run:ios",
     "Step4.2_android": "expo run:android",
-    "Step5_add_cross_env": "yarn add cross-env --dev",
     "dev": "cross-env REACT_NATIVE_PACKAGER_HOSTNAME=$(ipconfig getifaddr en0) NODE_ENV=development expo start --dev-client --host lan",
     "ios": "expo run:ios",
     "android": "expo run:android",
