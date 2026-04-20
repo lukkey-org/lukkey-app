@@ -25,7 +25,7 @@ export const isBlePermissionGrantedByState = (state) =>
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const waitForIosBleState = async (mgr, timeoutMs = 2500) => {
+const waitForIosBleState = async (mgr, timeoutMs = 12000) => {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     try {

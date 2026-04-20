@@ -6,6 +6,7 @@
 // utils/OnboardingScreen.js
 import React, { useState, useEffect, useRef, useContext, useCallback } from "react";
 import {
+  AppState,
   View,
   Text,
   Image,
@@ -79,6 +80,7 @@ const OnboardingScreen = ({ onDone }) => {
   const [iosBleProbeReady, setIosBleProbeReady] = useState(Platform.OS !== "ios");
   const iosNotifRequestAttemptedRef = useRef(false);
   const iosBleRequestAttemptedRef = useRef(false);
+  const appStateRef = useRef(AppState.currentState);
   const imageAnim = useRef(new Animated.Value(0)).current;
   const titleAnim = useRef(new Animated.Value(0)).current;
   const subtitleAnim = useRef(new Animated.Value(0)).current;
@@ -169,14 +171,16 @@ const OnboardingScreen = ({ onDone }) => {
     }
   }, []);
 
-  const refreshBlePermStatus = useCallback(async () => {
+  const refreshBlePermStatus = useCallback(async (options = {}) => {
+    const forceIosProbe = options?.forceIosProbe === true;
     try {
       if (Platform.OS === "android") {
         const granted = await isAndroidBlePermissionGranted();
         setBlePermGranted(!!granted);
         return;
       }
-      if (!iosBleProbeEnabled) {
+      const shouldProbeIos = iosBleProbeEnabled || forceIosProbe;
+      if (!shouldProbeIos) {
         setBlePermGranted(false);
         return;
       }
@@ -200,6 +204,64 @@ const OnboardingScreen = ({ onDone }) => {
     if (!iosBleProbeReady) return;
     refreshNotifStatus();
     refreshBlePermStatus();
+  }, [iosBleProbeReady, refreshBlePermStatus, refreshNotifStatus, showPermissionStep]);
+
+  useEffect(() => {
+    if (Platform.OS !== "ios") return;
+    if (!showPermissionStep) return;
+    if (!iosBleProbeReady) return;
+
+    let unsub = null;
+    try {
+      const mgr = bleManagerRef?.current;
+      if (mgr?.onStateChange) {
+        unsub = mgr.onStateChange(
+          (state) => {
+            const nextState = state || "Unknown";
+            const granted = isBlePermissionGrantedByState(nextState);
+            setBlePermGranted(granted);
+            if (granted) {
+              setIosBleProbeEnabled(true);
+            }
+            if (nextState !== "Unknown") {
+              markIosBlePermissionDecided();
+            }
+          },
+          true,
+        );
+      }
+    } catch {}
+
+    return () => {
+      try {
+        unsub?.remove?.();
+      } catch {}
+    };
+  }, [
+    bleManagerRef,
+    iosBleProbeReady,
+    markIosBlePermissionDecided,
+    showPermissionStep,
+  ]);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (nextState) => {
+      const prevState = appStateRef.current;
+      appStateRef.current = nextState;
+      if (
+        showPermissionStep &&
+        iosBleProbeReady &&
+        (prevState === "inactive" || prevState === "background") &&
+        nextState === "active"
+      ) {
+        refreshNotifStatus();
+        refreshBlePermStatus({ forceIosProbe: Platform.OS === "ios" });
+      }
+    });
+
+    return () => {
+      sub?.remove?.();
+    };
   }, [iosBleProbeReady, refreshBlePermStatus, refreshNotifStatus, showPermissionStep]);
 
   // Android navigation bar background and button style settings to avoid white areas at the bottom
@@ -270,6 +332,8 @@ const OnboardingScreen = ({ onDone }) => {
     } else {
       granted = true;
     }
+    // Apply the request result to UI immediately, then verify in background.
+    setBlePermGranted(!!granted);
     const shouldOpenSettings =
       Platform.OS === "ios" ? iosBleRequestAttemptedRef.current && !granted : !granted;
     iosBleRequestAttemptedRef.current = true;
@@ -278,7 +342,7 @@ const OnboardingScreen = ({ onDone }) => {
         await Linking.openSettings?.();
       } catch {}
     }
-    await refreshBlePermStatus();
+    refreshBlePermStatus({ forceIosProbe: Platform.OS === "ios" });
   };
 
   const startAnimation = () => {
