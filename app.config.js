@@ -9,7 +9,7 @@ import { existsSync } from "node:fs";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-const sharedVersion = "0.0.7";
+const sharedVersion = "0.0.8";
 const isProd =
   process.env.EAS_BUILD_PROFILE === "production" ||
   process.env.NODE_ENV === "production";
@@ -79,24 +79,46 @@ function safeUrlHost(value) {
 }
 
 function loadPrivateRuntimeConfig() {
-  const serviceHostsText = readOptionalFile("private/runtime/network/serviceHosts.js");
-  const chainConfigText = readOptionalFile("private/runtime/network/chainConfig.js");
-  const chainAuthText = readOptionalFile("private/runtime/network/chainAuth.js");
-  const apiEndpointsText = readOptionalFile("private/runtime/network/apiEndpoints.js");
-  const bluetoothConfigText = readOptionalFile("private/runtime/device/bluetoothConfig.js");
-  const deviceAuthText = readOptionalFile("private/runtime/device/deviceAuthKey.js");
+  const serviceHostsText = readOptionalFile(
+    "private/runtime/network/serviceHosts.js",
+  );
+  const chainConfigText = readOptionalFile(
+    "private/runtime/network/chainConfig.js",
+  );
+  const chainAuthText = readOptionalFile(
+    "private/runtime/network/chainAuth.js",
+  );
+  const apiEndpointsText = readOptionalFile(
+    "private/runtime/network/apiEndpoints.js",
+  );
+  const bluetoothConfigText = readOptionalFile(
+    "private/runtime/device/bluetoothConfig.js",
+  );
+  const deviceAuthText = readOptionalFile(
+    "private/runtime/device/deviceAuthKey.js",
+  );
 
-  const serviceHostsObject = extractObjectLiteral(serviceHostsText, "SERVICE_HOSTS");
+  const serviceHostsObject = extractObjectLiteral(
+    serviceHostsText,
+    "SERVICE_HOSTS",
+  );
   const chainHmacObject = extractObjectLiteral(chainAuthText, "CHAIN_HMAC");
   const pushApiObject = extractObjectLiteral(apiEndpointsText, "pushAPI");
-  const externalLinksObject = extractObjectLiteral(apiEndpointsText, "externalLinks");
-  const firmwareApiObject = extractObjectLiteral(apiEndpointsText, "firmwareAPI");
+  const externalLinksObject = extractObjectLiteral(
+    apiEndpointsText,
+    "externalLinks",
+  );
+  const firmwareApiObject = extractObjectLiteral(
+    apiEndpointsText,
+    "firmwareAPI",
+  );
   const apiPathsObject = extractObjectLiteral(apiEndpointsText, "API_PATHS");
-  const bluetoothObject = extractObjectLiteral(bluetoothConfigText, "bluetoothConfig");
+  const bluetoothObject = extractObjectLiteral(
+    bluetoothConfigText,
+    "bluetoothConfig",
+  );
 
-  const pushOrigin =
-    safeUrlOrigin(pushApiObject?.transactionsWS) ||
-    null;
+  const pushOrigin = safeUrlOrigin(pushApiObject?.transactionsWS) || null;
   const siteOrigin =
     safeUrlOrigin(externalLinksObject?.aboutPage) ||
     safeUrlOrigin(firmwareApiObject?.lvglList) ||
@@ -114,7 +136,9 @@ function loadPrivateRuntimeConfig() {
     pushOrigin,
     pushHost: safeUrlHost(pushApiObject?.transactionsWS),
     siteOrigin,
-    siteHost: safeUrlHost(externalLinksObject?.aboutPage) || safeUrlHost(firmwareApiObject?.lvglList),
+    siteHost:
+      safeUrlHost(externalLinksObject?.aboutPage) ||
+      safeUrlHost(firmwareApiObject?.lvglList),
     fileHost: serviceHostsObject?.file || null,
     fileOrigin: serviceHostsObject?.file
       ? `https://${serviceHostsObject.file}`
@@ -129,12 +153,19 @@ function loadPrivateRuntimeConfig() {
     firmwareMd5Base,
     firmwareMd5HeaderName: firmwareApiObject?.lvglMd5HeaderName || null,
     firmwareMd5Token: firmwareApiObject?.lvglMd5Token || null,
-    appKey: extractString(chainAuthText, "APP_KEY") || chainHmacObject?.APP_KEY || null,
+    appKey:
+      extractString(chainAuthText, "APP_KEY") ||
+      chainHmacObject?.APP_KEY ||
+      null,
     appSecret:
-      extractString(chainAuthText, "APP_SECRET") || chainHmacObject?.APP_SECRET || null,
+      extractString(chainAuthText, "APP_SECRET") ||
+      chainHmacObject?.APP_SECRET ||
+      null,
     bleServiceUUID: bluetoothObject?.serviceUUID || null,
-    bleWriteCharacteristicUUID: bluetoothObject?.writeCharacteristicUUID || null,
-    bleNotifyCharacteristicUUID: bluetoothObject?.notifyCharacteristicUUID || null,
+    bleWriteCharacteristicUUID:
+      bluetoothObject?.writeCharacteristicUUID || null,
+    bleNotifyCharacteristicUUID:
+      bluetoothObject?.notifyCharacteristicUUID || null,
     deviceAuthKey: extractUint32Array(deviceAuthText),
   };
 }

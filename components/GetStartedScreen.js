@@ -12,7 +12,7 @@ import { VaultScreenStylesRoot, makeSharedPrimitives } from "../styles/styles";
 import EmptyWalletView from "./AssetsScreen/EmptyWalletView";
 import { DarkModeContext } from "../utils/DeviceContext";
 
-const GetStartedScreen = ({ onScreenFocus }) => {
+const GetStartedScreen = ({ onGetStarted, onScreenFocus }) => {
   const { isDarkMode } = useContext(DarkModeContext);
   const VaultScreenStyle = VaultScreenStylesRoot(isDarkMode);
   const themePrimitives = makeSharedPrimitives(isDarkMode);
@@ -28,8 +28,10 @@ const GetStartedScreen = ({ onScreenFocus }) => {
   }, [navigation]);
 
   const handleContinue = useCallback(() => {
-    navigation.navigate("AddItem");
-  }, [navigation]);
+    if (typeof onGetStarted === "function") {
+      onGetStarted();
+    }
+  }, [onGetStarted]);
 
   const handlePurchasePress = useCallback(() => {
     Linking.openURL("https://lukkey.com/lukkey").catch(() => {});
