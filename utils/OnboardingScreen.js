@@ -4,7 +4,13 @@
  * © Copyright LUKKEY AG
  */
 // utils/OnboardingScreen.js
-import React, { useState, useEffect, useRef, useContext, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useContext,
+  useCallback,
+} from "react";
 import {
   AppState,
   View,
@@ -77,7 +83,9 @@ const OnboardingScreen = ({ onDone }) => {
   const [notifGranted, setNotifGranted] = useState(false);
   const [blePermGranted, setBlePermGranted] = useState(false);
   const [iosBleProbeEnabled, setIosBleProbeEnabled] = useState(false);
-  const [iosBleProbeReady, setIosBleProbeReady] = useState(Platform.OS !== "ios");
+  const [iosBleProbeReady, setIosBleProbeReady] = useState(
+    Platform.OS !== "ios",
+  );
   const iosNotifRequestAttemptedRef = useRef(false);
   const iosBleRequestAttemptedRef = useRef(false);
   const appStateRef = useRef(AppState.currentState);
@@ -147,7 +155,9 @@ const OnboardingScreen = ({ onDone }) => {
     let mounted = true;
     (async () => {
       try {
-        const decided = await AsyncStorage.getItem(IOS_BLE_PERMISSION_DECIDED_KEY);
+        const decided = await AsyncStorage.getItem(
+          IOS_BLE_PERMISSION_DECIDED_KEY,
+        );
         if (mounted && decided === "1") {
           setIosBleProbeEnabled(true);
         }
@@ -171,40 +181,48 @@ const OnboardingScreen = ({ onDone }) => {
     }
   }, []);
 
-  const refreshBlePermStatus = useCallback(async (options = {}) => {
-    const forceIosProbe = options?.forceIosProbe === true;
-    try {
-      if (Platform.OS === "android") {
-        const granted = await isAndroidBlePermissionGranted();
-        setBlePermGranted(!!granted);
-        return;
-      }
-      const shouldProbeIos = iosBleProbeEnabled || forceIosProbe;
-      if (!shouldProbeIos) {
-        setBlePermGranted(false);
-        return;
-      }
-      const mgr = bleManagerRef?.current;
-      if (mgr?.state) {
-        const state = await mgr.state();
-        setBlePermGranted(isBlePermissionGrantedByState(state));
-        if (state !== "Unknown") {
-          await markIosBlePermissionDecided();
+  const refreshBlePermStatus = useCallback(
+    async (options = {}) => {
+      const forceIosProbe = options?.forceIosProbe === true;
+      try {
+        if (Platform.OS === "android") {
+          const granted = await isAndroidBlePermissionGranted();
+          setBlePermGranted(!!granted);
+          return;
         }
-      } else {
+        const shouldProbeIos = iosBleProbeEnabled || forceIosProbe;
+        if (!shouldProbeIos) {
+          setBlePermGranted(false);
+          return;
+        }
+        const mgr = bleManagerRef?.current;
+        if (mgr?.state) {
+          const state = await mgr.state();
+          setBlePermGranted(isBlePermissionGrantedByState(state));
+          if (state !== "Unknown") {
+            await markIosBlePermissionDecided();
+          }
+        } else {
+          setBlePermGranted(false);
+        }
+      } catch {
         setBlePermGranted(false);
       }
-    } catch {
-      setBlePermGranted(false);
-    }
-  }, [bleManagerRef, iosBleProbeEnabled, markIosBlePermissionDecided]);
+    },
+    [bleManagerRef, iosBleProbeEnabled, markIosBlePermissionDecided],
+  );
 
   useEffect(() => {
     if (!showPermissionStep) return;
     if (!iosBleProbeReady) return;
     refreshNotifStatus();
     refreshBlePermStatus();
-  }, [iosBleProbeReady, refreshBlePermStatus, refreshNotifStatus, showPermissionStep]);
+  }, [
+    iosBleProbeReady,
+    refreshBlePermStatus,
+    refreshNotifStatus,
+    showPermissionStep,
+  ]);
 
   useEffect(() => {
     if (Platform.OS !== "ios") return;
@@ -216,20 +234,17 @@ const OnboardingScreen = ({ onDone }) => {
     try {
       const mgr = bleManagerRef?.current;
       if (mgr?.onStateChange) {
-        unsub = mgr.onStateChange(
-          (state) => {
-            const nextState = state || "Unknown";
-            const granted = isBlePermissionGrantedByState(nextState);
-            setBlePermGranted(granted);
-            if (granted) {
-              setIosBleProbeEnabled(true);
-            }
-            if (nextState !== "Unknown") {
-              markIosBlePermissionDecided();
-            }
-          },
-          true,
-        );
+        unsub = mgr.onStateChange((state) => {
+          const nextState = state || "Unknown";
+          const granted = isBlePermissionGrantedByState(nextState);
+          setBlePermGranted(granted);
+          if (granted) {
+            setIosBleProbeEnabled(true);
+          }
+          if (nextState !== "Unknown") {
+            markIosBlePermissionDecided();
+          }
+        }, true);
       }
     } catch {}
 
@@ -319,7 +334,9 @@ const OnboardingScreen = ({ onDone }) => {
       granted = res?.status === "granted" || res?.granted === true;
     } catch {}
     const shouldOpenSettings =
-      Platform.OS === "ios" ? iosNotifRequestAttemptedRef.current && !granted : !granted;
+      Platform.OS === "ios"
+        ? iosNotifRequestAttemptedRef.current && !granted
+        : !granted;
     iosNotifRequestAttemptedRef.current = true;
     if (shouldOpenSettings) {
       try {
@@ -345,7 +362,9 @@ const OnboardingScreen = ({ onDone }) => {
     // Apply the request result to UI immediately, then verify in background.
     setBlePermGranted(!!granted);
     const shouldOpenSettings =
-      Platform.OS === "ios" ? iosBleRequestAttemptedRef.current && !granted : !granted;
+      Platform.OS === "ios"
+        ? iosBleRequestAttemptedRef.current && !granted
+        : !granted;
     iosBleRequestAttemptedRef.current = true;
     if (shouldOpenSettings) {
       try {
@@ -694,7 +713,7 @@ const OnboardingScreen = ({ onDone }) => {
                 style={[styles.button, styles.leftBtn]}
                 onPress={() => {
                   if (activeIndex <= 1) {
-                    onDone();
+                    setShowPermissionStep(true);
                   } else {
                     goToSlide(activeIndex - 1);
                   }
@@ -772,7 +791,9 @@ const OnboardingScreen = ({ onDone }) => {
           </BlurView>
           <View style={styles.permissionWrap}>
             <View style={styles.permissionIntroGroup}>
-              <Text style={styles.permissionTitle}>{i18n.t("Permissions")}</Text>
+              <Text style={styles.permissionTitle}>
+                {i18n.t("Permissions")}
+              </Text>
               <Text style={styles.permissionSubtitle}>
                 {i18n.t(
                   "Bluetooth connects your Lukkey device. Notifications keep you updated.",
@@ -862,15 +883,15 @@ const OnboardingScreen = ({ onDone }) => {
         </LinearGradient>
       ) : (
         <>
-      <View style={{ flex: 1 }}>
-        {renderedSlideIndex != null
-          ? renderItem({
-              item: slides[renderedSlideIndex],
-              index: renderedSlideIndex,
-            })
-          : null}
-        {renderPagination(currentSlideKey)}
-      </View>
+          <View style={{ flex: 1 }}>
+            {renderedSlideIndex != null
+              ? renderItem({
+                  item: slides[renderedSlideIndex],
+                  index: renderedSlideIndex,
+                })
+              : null}
+            {renderPagination(currentSlideKey)}
+          </View>
         </>
       )}
     </View>

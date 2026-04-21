@@ -31,8 +31,14 @@ import CardItem from "./CardItem";
 import DataSkeleton from "./DataSkeleton";
 import TotalBalanceHeader from "./TotalBalanceHeader";
 import { resolveGasFeeSymbolForChain } from "../../config/gasFeeToken";
-import { getBchQueryAddressesFromCard, isBchCard } from "../../utils/bchAddress";
-import { getBtcQueryAddressesFromCard, isBtcCard } from "../../utils/btcAddress";
+import {
+  getBchQueryAddressesFromCard,
+  isBchCard,
+} from "../../utils/bchAddress";
+import {
+  getBtcQueryAddressesFromCard,
+  isBtcCard,
+} from "../../utils/btcAddress";
 
 const getNftMintValue = (card) => String(card?.tokenId ?? card?.mint ?? "");
 
@@ -106,14 +112,22 @@ const AssetsWalletPage = ({
   const [isScrollEnabled, setIsScrollEnabled] = React.useState(true);
   const [isJiggleMode, setIsJiggleMode] = React.useState(false);
   const [isDragReady, setIsDragReady] = React.useState(false);
+  const [draggingStableId, setDraggingStableId] = React.useState(null);
+  const [latestSwapEvent, setLatestSwapEvent] = React.useState(null);
   const isJiggleModeRef = React.useRef(false);
   const isDragReadyRef = React.useRef(false);
+  const swapEventSeqRef = React.useRef(0);
   const orderedCardsRef = React.useRef([]);
   const dataIndexByCardRef = React.useRef(new Map());
   const stableIdByDataIndexRef = React.useRef([]);
   const orderTagByIdRef = React.useRef({});
   const orderTagsLoadedRef = React.useRef(false);
-  const lastSwapRef = React.useRef({ id: null, at: 0 });
+  const lastSwapRef = React.useRef({
+    id: null,
+    targetId: null,
+    direction: null,
+    at: 0,
+  });
   const autoScrollTimerRef = React.useRef(null);
   const listSkeletonGraceTimerRef = React.useRef(null);
   const autoScrollDirRef = React.useRef(null);
@@ -132,8 +146,10 @@ const AssetsWalletPage = ({
   const maxScrollY = useSharedValue(0);
   const listHeightRef = React.useRef(0);
   const containerHeightRef = React.useRef(0);
-  const [showInitialCardSkeleton, setShowInitialCardSkeleton] = React.useState(true);
-  const [minimumSkeletonElapsed, setMinimumSkeletonElapsed] = React.useState(false);
+  const [showInitialCardSkeleton, setShowInitialCardSkeleton] =
+    React.useState(true);
+  const [minimumSkeletonElapsed, setMinimumSkeletonElapsed] =
+    React.useState(false);
   const [suppressListSkeleton, setSuppressListSkeleton] = React.useState(false);
   const initialSkeletonTimerRef = React.useRef(null);
   const cardSkeletonColors = React.useMemo(
@@ -156,7 +172,13 @@ const AssetsWalletPage = ({
               },
               iconDotSkeleton: {
                 background: "#D6CDED",
-                shimmer: ["#CFC6E7", "#D9D1EF", "#E4DDF5", "#D9D1EF", "#CFC6E7"],
+                shimmer: [
+                  "#CFC6E7",
+                  "#D9D1EF",
+                  "#E4DDF5",
+                  "#D9D1EF",
+                  "#CFC6E7",
+                ],
               },
               skeleton: {
                 background: "rgba(255,255,255,0.14)",
@@ -185,7 +207,13 @@ const AssetsWalletPage = ({
               },
               iconDotSkeleton: {
                 background: "#C8C0E0",
-                shimmer: ["#C1B9D8", "#CBC4E2", "#D9D2EA", "#CBC4E2", "#C1B9D8"],
+                shimmer: [
+                  "#C1B9D8",
+                  "#CBC4E2",
+                  "#D9D2EA",
+                  "#CBC4E2",
+                  "#C1B9D8",
+                ],
               },
               skeleton: {
                 background: "rgba(255,255,255,0.12)",
@@ -214,7 +242,13 @@ const AssetsWalletPage = ({
               },
               iconDotSkeleton: {
                 background: "#F0E6C9",
-                shimmer: ["#E7DCBE", "#F0E7CB", "#F8F1DE", "#F0E7CB", "#E7DCBE"],
+                shimmer: [
+                  "#E7DCBE",
+                  "#F0E7CB",
+                  "#F8F1DE",
+                  "#F0E7CB",
+                  "#E7DCBE",
+                ],
               },
               skeleton: {
                 background: "rgba(255,255,255,0.16)",
@@ -243,7 +277,13 @@ const AssetsWalletPage = ({
               },
               iconDotSkeleton: {
                 background: "#CBD5E4",
-                shimmer: ["#C3CDDC", "#CFD8E6", "#DCE4EE", "#CFD8E6", "#C3CDDC"],
+                shimmer: [
+                  "#C3CDDC",
+                  "#CFD8E6",
+                  "#DCE4EE",
+                  "#CFD8E6",
+                  "#C3CDDC",
+                ],
               },
               skeleton: {
                 background: "rgba(255,255,255,0.14)",
@@ -406,148 +446,164 @@ const AssetsWalletPage = ({
     const textSkeletonRadius = 7;
     const topRowHeight = 20;
     const topRowBottom = 36;
-    return Array.from({ length: 4 }).map((_, index) => (
+    return Array.from({ length: 4 }).map((_, index) =>
       (() => {
         const palette = Array.isArray(cardSkeletonColors)
           ? cardSkeletonColors[index % cardSkeletonColors.length]
           : cardSkeletonColors;
         return (
-      <View
-        key={`asset-card-skeleton-${index}`}
-        style={[
-          VaultScreenStyle.cardContainer,
-          {
-            zIndex: index + 1,
-          },
-        ]}
-      >
-        <View
-          style={[
-            VaultScreenStyle.assetPageCard,
-            index === 0 ? VaultScreenStyle.cardFirst : VaultScreenStyle.cardOthers,
-            {
-              position: "relative",
-              overflow: "hidden",
-              backgroundColor: palette.cardBackground,
-            },
-          ]}
-        >
           <View
-            style={{
-              ...StyleSheet.absoluteFillObject,
-              backgroundColor: palette.cardOverlay,
-            }}
-          />
-
-          <View style={{ position: "absolute", top: 16, left: 16, width: 60, height: 60 }}>
-            <DataSkeleton
-              width={40}
-              height={40}
-              isDarkMode={isDarkMode}
-              colors={palette.iconBubbleSkeleton}
-              style={{ borderRadius: 20 }}
-            />
-            <DataSkeleton
-              width={16}
-              height={16}
-              isDarkMode={isDarkMode}
-              colors={palette.iconDotSkeleton}
-              style={{
-                position: "absolute",
-                top: 26,
-                left: 28,
-                borderRadius: 8,
-              }}
-            />
-          </View>
-
-          <View
-            style={{
-              position: "absolute",
-              left: 71,
-              right: 16,
-              top: topRowBottom - topRowHeight,
-              height: topRowHeight,
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "flex-end",
-            }}
+            key={`asset-card-skeleton-${index}`}
+            style={[
+              VaultScreenStyle.cardContainer,
+              {
+                zIndex: index + 1,
+              },
+            ]}
           >
-            <View style={{ justifyContent: "flex-end", alignItems: "flex-start" }}>
-              <DataSkeleton
-                width={index % 2 === 0 ? 92 : 118}
-                height={topRowHeight}
-                isDarkMode={isDarkMode}
-                colors={palette.skeleton}
-                style={{ borderRadius: textSkeletonRadius }}
-              />
-            </View>
-            <View style={{ justifyContent: "flex-end", alignItems: "flex-end" }}>
-              <DataSkeleton
-                width={index % 2 === 0 ? 92 : 106}
-                height={topRowHeight}
-                isDarkMode={isDarkMode}
-                colors={palette.skeleton}
-                style={{ borderRadius: textSkeletonRadius }}
-              />
-            </View>
-          </View>
-
-          <View style={{ position: "absolute", top: 42, left: 71 }}>
-            <DataSkeleton
-              width={index % 2 === 0 ? 62 : 74}
-              height={16}
-              isDarkMode={isDarkMode}
-              colors={palette.skeleton}
-              style={{ borderRadius: textSkeletonRadius }}
-            />
             <View
-              pointerEvents="none"
-              style={{
-                position: "absolute",
-                left: 50,
-                top: -60,
-                opacity: 0.16,
-                width: 280,
-                height: 280,
-                borderRadius: 48,
-                backgroundColor: palette.accentBlock,
-                transform: [{ rotate: "-10deg" }],
-              }}
-            />
-          </View>
+              style={[
+                VaultScreenStyle.assetPageCard,
+                index === 0
+                  ? VaultScreenStyle.cardFirst
+                  : VaultScreenStyle.cardOthers,
+                {
+                  position: "relative",
+                  overflow: "hidden",
+                  backgroundColor: palette.cardBackground,
+                },
+              ]}
+            >
+              <View
+                style={{
+                  ...StyleSheet.absoluteFillObject,
+                  backgroundColor: palette.cardOverlay,
+                }}
+              />
 
-          <View
-            style={{
-              position: "absolute",
-              top: 42,
-              right: 16,
-              flexDirection: "row",
-              gap: 10,
-              alignItems: "center",
-            }}
-          >
-            <DataSkeleton
-              width={52}
-              height={18}
-              isDarkMode={isDarkMode}
-              colors={palette.skeleton}
-              style={{ borderRadius: textSkeletonRadius }}
-            />
-            <DataSkeleton
-              width={66}
-              height={18}
-              isDarkMode={isDarkMode}
-              colors={palette.skeleton}
-              style={{ borderRadius: textSkeletonRadius }}
-            />
-          </View>
+              <View
+                style={{
+                  position: "absolute",
+                  top: 16,
+                  left: 16,
+                  width: 60,
+                  height: 60,
+                }}
+              >
+                <DataSkeleton
+                  width={40}
+                  height={40}
+                  isDarkMode={isDarkMode}
+                  colors={palette.iconBubbleSkeleton}
+                  style={{ borderRadius: 20 }}
+                />
+                <DataSkeleton
+                  width={16}
+                  height={16}
+                  isDarkMode={isDarkMode}
+                  colors={palette.iconDotSkeleton}
+                  style={{
+                    position: "absolute",
+                    top: 26,
+                    left: 28,
+                    borderRadius: 8,
+                  }}
+                />
+              </View>
 
-        </View>
-      </View>
+              <View
+                style={{
+                  position: "absolute",
+                  left: 71,
+                  right: 16,
+                  top: topRowBottom - topRowHeight,
+                  height: topRowHeight,
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "flex-end",
+                }}
+              >
+                <View
+                  style={{
+                    justifyContent: "flex-end",
+                    alignItems: "flex-start",
+                  }}
+                >
+                  <DataSkeleton
+                    width={index % 2 === 0 ? 92 : 118}
+                    height={topRowHeight}
+                    isDarkMode={isDarkMode}
+                    colors={palette.skeleton}
+                    style={{ borderRadius: textSkeletonRadius }}
+                  />
+                </View>
+                <View
+                  style={{ justifyContent: "flex-end", alignItems: "flex-end" }}
+                >
+                  <DataSkeleton
+                    width={index % 2 === 0 ? 92 : 106}
+                    height={topRowHeight}
+                    isDarkMode={isDarkMode}
+                    colors={palette.skeleton}
+                    style={{ borderRadius: textSkeletonRadius }}
+                  />
+                </View>
+              </View>
+
+              <View style={{ position: "absolute", top: 42, left: 71 }}>
+                <DataSkeleton
+                  width={index % 2 === 0 ? 62 : 74}
+                  height={16}
+                  isDarkMode={isDarkMode}
+                  colors={palette.skeleton}
+                  style={{ borderRadius: textSkeletonRadius }}
+                />
+                <View
+                  pointerEvents="none"
+                  style={{
+                    position: "absolute",
+                    left: 50,
+                    top: -60,
+                    opacity: 0.16,
+                    width: 280,
+                    height: 280,
+                    borderRadius: 48,
+                    backgroundColor: palette.accentBlock,
+                    transform: [{ rotate: "-10deg" }],
+                  }}
+                />
+              </View>
+
+              <View
+                style={{
+                  position: "absolute",
+                  top: 42,
+                  right: 16,
+                  flexDirection: "row",
+                  gap: 10,
+                  alignItems: "center",
+                }}
+              >
+                <DataSkeleton
+                  width={52}
+                  height={18}
+                  isDarkMode={isDarkMode}
+                  colors={palette.skeleton}
+                  style={{ borderRadius: textSkeletonRadius }}
+                />
+                <DataSkeleton
+                  width={66}
+                  height={18}
+                  isDarkMode={isDarkMode}
+                  colors={palette.skeleton}
+                  style={{ borderRadius: textSkeletonRadius }}
+                />
+              </View>
+            </View>
+          </View>
         );
-      })()
-    ));
+      })(),
+    );
   }, [VaultScreenStyle, cardSkeletonColors, isDarkMode]);
 
   const updateMaxScroll = React.useCallback(() => {
@@ -596,6 +652,8 @@ const AssetsWalletPage = ({
       ).catch(() => {});
       setIsJiggleMode(false);
       setIsDragReady(false);
+      setDraggingStableId(null);
+      setLatestSwapEvent(null);
     }
     onExitEditHandled?.();
   }, [exitEditRequested, isJiggleMode, onExitEditHandled]);
@@ -608,6 +666,8 @@ const AssetsWalletPage = ({
     ).catch(() => {});
     setIsJiggleMode(false);
     setIsDragReady(false);
+    setDraggingStableId(null);
+    setLatestSwapEvent(null);
   }, []);
 
   const handleCardLongPress = React.useCallback(() => {
@@ -616,10 +676,17 @@ const AssetsWalletPage = ({
     setIsJiggleMode((prev) => !prev);
   }, [isClosing, isOpening, modalVisible]);
 
-  const handleCardDragReady = React.useCallback((_card, _index) => {
+  const handleCardDragReady = React.useCallback((card, _index) => {
     isDragReadyRef.current = true;
     setIsDragReady(true);
     setIsScrollEnabled(false);
+    const dataIndex = dataIndexByCardRef.current.get(card);
+    const stableId =
+      Number.isInteger(dataIndex) && stableIdByDataIndexRef.current[dataIndex]
+        ? stableIdByDataIndexRef.current[dataIndex]
+        : null;
+    setDraggingStableId(stableId);
+    setLatestSwapEvent(null);
   }, []);
 
   const stopAutoScroll = React.useCallback(() => {
@@ -636,6 +703,8 @@ const AssetsWalletPage = ({
       isDragReadyRef.current = false;
       setIsDragReady(false);
       setIsScrollEnabled(true);
+      setDraggingStableId(null);
+      setLatestSwapEvent(null);
     }
   }, [isJiggleMode, stopAutoScroll]);
 
@@ -656,29 +725,37 @@ const AssetsWalletPage = ({
       ? getBchQueryAddressesFromCard(card)
       : getBtcQueryAddressesFromCard(card);
     return addresses
-      .map((address) => String(address || "").trim().toLowerCase())
+      .map((address) =>
+        String(address || "")
+          .trim()
+          .toLowerCase(),
+      )
       .filter(Boolean)
       .sort()
       .join("|");
   }, []);
 
-  const getStableId = React.useCallback((card) => {
-    const chain = card?.queryChainName || card?.queryChainShortName || "chain";
-    const address = getCardIdentityAddress(card);
-    const contract =
-      card?.contractAddress ||
-      card?.contract_address ||
-      card?.tokenContractAddress ||
-      "";
-    const tokenId = getNftMintValue(card);
-    const symbol = card?.shortName || "";
-    const name = card?.name || "card";
-    return `${chain}:${address}:${String(contract).toLowerCase()}:${String(
-      tokenId,
-    ).toLowerCase()}:${String(symbol).toLowerCase()}:${String(
-      name,
-    ).toLowerCase()}`;
-  }, [getCardIdentityAddress]);
+  const getStableId = React.useCallback(
+    (card) => {
+      const chain =
+        card?.queryChainName || card?.queryChainShortName || "chain";
+      const address = getCardIdentityAddress(card);
+      const contract =
+        card?.contractAddress ||
+        card?.contract_address ||
+        card?.tokenContractAddress ||
+        "";
+      const tokenId = getNftMintValue(card);
+      const symbol = card?.shortName || "";
+      const name = card?.name || "card";
+      return `${chain}:${address}:${String(contract).toLowerCase()}:${String(
+        tokenId,
+      ).toLowerCase()}:${String(symbol).toLowerCase()}:${String(
+        name,
+      ).toLowerCase()}`;
+    },
+    [getCardIdentityAddress],
+  );
 
   const getDeleteCardKey = React.useCallback((card) => {
     if (!card) return "";
@@ -853,7 +930,8 @@ const AssetsWalletPage = ({
   }, [showInitialCardSkeleton]);
 
   React.useEffect(() => {
-    if (!showInitialCardSkeleton || modalVisible || isOpening || isClosing) return;
+    if (!showInitialCardSkeleton || modalVisible || isOpening || isClosing)
+      return;
     if (!walletSyncReady) return;
     if (!minimumSkeletonElapsed) return;
 
@@ -950,11 +1028,30 @@ const AssetsWalletPage = ({
     [maxScrollY, scrollViewRef, scrollY, stopAutoScroll],
   );
 
+  const swapOrderTags = React.useCallback((movingId, targetId) => {
+    if (!movingId || !targetId || movingId === targetId) return;
+    setOrderTagById((prev) => {
+      const fromTag = prev[movingId];
+      const toTag = prev[targetId];
+      if (!Number.isFinite(fromTag) || !Number.isFinite(toTag)) {
+        return prev;
+      }
+      return {
+        ...prev,
+        [movingId]: toTag,
+        [targetId]: fromTag,
+      };
+    });
+  }, []);
+
   const handleCardDragMove = React.useCallback(
     ({ card, moveY, dy }) => {
       if (!isJiggleModeRef.current || !isDragReadyRef.current) return;
-      const swapThreshold = 8;
-      const swapCooldownMs = 120;
+      let appliedSwapBaseDelta = 0;
+      const swapHysteresisDown = 12;
+      const swapHysteresisUp = 24;
+      const swapCooldownMs = dy < 0 ? 240 : 170;
+      const reverseSwapCooldownMs = dy < 0 ? 340 : 260;
       const ordered = orderedCardsRef.current || [];
       if (Array.isArray(ordered) && ordered.length > 1) {
         const dataIndex = dataIndexByCardRef.current.get(card);
@@ -991,27 +1088,44 @@ const AssetsWalletPage = ({
                 : undefined;
               if (
                 Number.isFinite(nextLayoutY) &&
-                targetY >= nextLayoutY + swapThreshold
+                targetY >=
+                  (currentLayoutY + nextLayoutY) / 2 + swapHysteresisDown
               ) {
                 const now = Date.now();
+                const lastSwap = lastSwapRef.current || {};
                 if (
-                  lastSwapRef.current.id === stableId &&
-                  now - lastSwapRef.current.at < swapCooldownMs
+                  lastSwap.id === stableId &&
+                  lastSwap.targetId === nextItem.stableId &&
+                  lastSwap.direction === "up" &&
+                  now - lastSwap.at < reverseSwapCooldownMs
                 ) {
                   return;
                 }
-                lastSwapRef.current = { id: stableId, at: now };
-                setOrderTagById((prev) => {
-                  const fromTag = prev[stableId];
-                  const toTag = prev[nextItem.stableId];
-                  if (!Number.isFinite(fromTag) || !Number.isFinite(toTag)) {
-                    return prev;
-                  }
-                  return {
-                    ...prev,
-                    [stableId]: toTag,
-                    [nextItem.stableId]: fromTag,
-                  };
+                if (
+                  lastSwap.id === stableId &&
+                  now - lastSwap.at < swapCooldownMs
+                ) {
+                  return;
+                }
+                lastSwapRef.current = {
+                  id: stableId,
+                  targetId: nextItem.stableId,
+                  direction: "down",
+                  at: now,
+                };
+                appliedSwapBaseDelta = nextLayoutY - currentLayoutY;
+                swapOrderTags(stableId, nextItem.stableId);
+                const seq = swapEventSeqRef.current + 1;
+                swapEventSeqRef.current = seq;
+                setLatestSwapEvent({
+                  seq,
+                  movingId: stableId,
+                  targetId: nextItem.stableId,
+                  direction: "down",
+                  movingLayoutY: currentLayoutY,
+                  targetLayoutY: nextLayoutY,
+                  movingOrderAfter: currentIndex + 1,
+                  targetOrderAfter: currentIndex,
                 });
               }
             } else if (movingUp && currentIndex > 0) {
@@ -1021,27 +1135,43 @@ const AssetsWalletPage = ({
                 : undefined;
               if (
                 Number.isFinite(prevLayoutY) &&
-                targetY <= prevLayoutY - swapThreshold
+                targetY <= (currentLayoutY + prevLayoutY) / 2 - swapHysteresisUp
               ) {
                 const now = Date.now();
+                const lastSwap = lastSwapRef.current || {};
                 if (
-                  lastSwapRef.current.id === stableId &&
-                  now - lastSwapRef.current.at < swapCooldownMs
+                  lastSwap.id === stableId &&
+                  lastSwap.targetId === prevItem.stableId &&
+                  lastSwap.direction === "down" &&
+                  now - lastSwap.at < reverseSwapCooldownMs
                 ) {
                   return;
                 }
-                lastSwapRef.current = { id: stableId, at: now };
-                setOrderTagById((prev) => {
-                  const fromTag = prev[stableId];
-                  const toTag = prev[prevItem.stableId];
-                  if (!Number.isFinite(fromTag) || !Number.isFinite(toTag)) {
-                    return prev;
-                  }
-                  return {
-                    ...prev,
-                    [stableId]: toTag,
-                    [prevItem.stableId]: fromTag,
-                  };
+                if (
+                  lastSwap.id === stableId &&
+                  now - lastSwap.at < swapCooldownMs
+                ) {
+                  return;
+                }
+                lastSwapRef.current = {
+                  id: stableId,
+                  targetId: prevItem.stableId,
+                  direction: "up",
+                  at: now,
+                };
+                appliedSwapBaseDelta = prevLayoutY - currentLayoutY;
+                swapOrderTags(stableId, prevItem.stableId);
+                const seq = swapEventSeqRef.current + 1;
+                swapEventSeqRef.current = seq;
+                setLatestSwapEvent({
+                  seq,
+                  movingId: stableId,
+                  targetId: prevItem.stableId,
+                  direction: "up",
+                  movingLayoutY: currentLayoutY,
+                  targetLayoutY: prevLayoutY,
+                  movingOrderAfter: currentIndex - 1,
+                  targetOrderAfter: currentIndex,
                 });
               }
             }
@@ -1061,20 +1191,26 @@ const AssetsWalletPage = ({
       } else {
         stopAutoScroll();
       }
+      return appliedSwapBaseDelta;
     },
-    [getStableId, scrollContainerAbsYRef, startAutoScroll, stopAutoScroll],
+    [
+      getStableId,
+      scrollContainerAbsYRef,
+      startAutoScroll,
+      stopAutoScroll,
+      swapOrderTags,
+    ],
   );
 
-  const handleCardDragEnd = React.useCallback(
-    () => {
-      stopAutoScroll();
-      isDragReadyRef.current = false;
-      setIsDragReady(false);
-      setIsScrollEnabled(true);
-      if (!isJiggleModeRef.current) return;
-    },
-    [stopAutoScroll],
-  );
+  const handleCardDragEnd = React.useCallback(() => {
+    stopAutoScroll();
+    isDragReadyRef.current = false;
+    setIsDragReady(false);
+    setIsScrollEnabled(true);
+    setDraggingStableId(null);
+    setLatestSwapEvent(null);
+    if (!isJiggleModeRef.current) return;
+  }, [stopAutoScroll]);
 
   const panGesture = React.useMemo(
     () =>
@@ -1082,6 +1218,7 @@ const AssetsWalletPage = ({
         .enabled(
           !modalVisible &&
             !isOpening &&
+            !isJiggleMode &&
             cryptoCards.length > 0 &&
             isScrollEnabled,
         )
@@ -1149,12 +1286,16 @@ const AssetsWalletPage = ({
   });
   const shouldHideOtherCards =
     hideOtherCards || isOpening || (modalVisible && !isClosing);
-  const getCardKey = React.useCallback((card, index) => {
-    const chain = card?.queryChainName || card?.queryChainShortName || "chain";
-    const address = getCardIdentityAddress(card);
-    const name = card?.shortName || card?.name || "card";
-    return `${chain}:${address || name}:${index}`;
-  }, [getCardIdentityAddress]);
+  const getCardKey = React.useCallback(
+    (card, index) => {
+      const chain =
+        card?.queryChainName || card?.queryChainShortName || "chain";
+      const address = getCardIdentityAddress(card);
+      const name = card?.shortName || card?.name || "card";
+      return `${chain}:${address || name}:${index}`;
+    },
+    [getCardIdentityAddress],
+  );
 
   const getEntryAnim = React.useCallback((key) => {
     if (!entryAnimMapRef.current.has(key)) {
@@ -1175,7 +1316,13 @@ const AssetsWalletPage = ({
       entryAnimMapRef.current.clear();
       return;
     }
-    if (modalVisible || isClosing || isOpening || isInitialLoading || showInitialCardSkeleton) {
+    if (
+      modalVisible ||
+      isClosing ||
+      isOpening ||
+      isInitialLoading ||
+      showInitialCardSkeleton
+    ) {
       if (countUpTimerRef.current) {
         clearTimeout(countUpTimerRef.current);
         countUpTimerRef.current = null;
@@ -1388,138 +1535,143 @@ const AssetsWalletPage = ({
             >
               {(cryptoCards.length > 0 || showHeaderSkeletonState) &&
                 (!modalVisible || isClosing) && (
-                <TotalBalanceHeader
-                  VaultScreenStyle={VaultScreenStyle}
-                  opacityAnim={opacityAnim}
-                  isOpening={isOpening}
-                  isInitialLoading={isInitialLoading}
-                  isBalanceSyncing={isBalanceSyncing}
-                  isPriceLoading={isPriceLoading}
-                  modalVisible={modalVisible}
-                  isClosing={isClosing}
-                hideNumbers={hideNumbers}
-                setHideNumbers={setHideNumbers}
-                totalBalanceRaw={totalBalanceRaw}
-                totalBalanceValue={totalBalanceValue}
-                totalBalanceDecimals={totalBalanceDecimals}
-                totalBalanceDisplayText={totalBalanceDisplayText}
-                totalBalanceUseScientific={totalBalanceUseScientific}
-                currencyUnit={currencyUnit}
-                allowTotalCountUp={allowTotalCountUp}
-                maskAmountStr={maskAmountStr}
-                isDarkMode={isDarkMode}
-                renderChainButton={renderChainButton}
-                t={t}
-              />
-            )}
+                  <TotalBalanceHeader
+                    VaultScreenStyle={VaultScreenStyle}
+                    opacityAnim={opacityAnim}
+                    isOpening={isOpening}
+                    isInitialLoading={isInitialLoading}
+                    isBalanceSyncing={isBalanceSyncing}
+                    isPriceLoading={isPriceLoading}
+                    modalVisible={modalVisible}
+                    isClosing={isClosing}
+                    hideNumbers={hideNumbers}
+                    setHideNumbers={setHideNumbers}
+                    totalBalanceRaw={totalBalanceRaw}
+                    totalBalanceValue={totalBalanceValue}
+                    totalBalanceDecimals={totalBalanceDecimals}
+                    totalBalanceDisplayText={totalBalanceDisplayText}
+                    totalBalanceUseScientific={totalBalanceUseScientific}
+                    currencyUnit={currencyUnit}
+                    allowTotalCountUp={allowTotalCountUp}
+                    maskAmountStr={maskAmountStr}
+                    isDarkMode={isDarkMode}
+                    renderChainButton={renderChainButton}
+                    t={t}
+                  />
+                )}
 
               {showCardListSkeleton
                 ? renderCardListSkeleton()
                 : orderedCards.map((item, uiIndex) => {
-                const { card, dataIndex } = item;
-                const stableIndex =
-                  Number.isInteger(dataIndex) && dataIndex >= 0
-                    ? dataIndex
-                    : uiIndex;
-                const isBlackText = [""].includes(card.shortName);
-                const priceChange =
-                  priceChanges[card.shortName]?.priceChange || "0";
-                const percentageChange =
-                  priceChanges[card.shortName]?.percentageChange || "0";
-                if (
-                  shouldHideOtherCards &&
-                  selectedCardIndex != null &&
-                  selectedCardIndex !== stableIndex
-                ) {
-                  return null;
-                }
-                const entryKey = getCardKey(card, stableIndex);
-                const entryAnim = getEntryAnim(entryKey);
-                const cardHideKey = getCardHideKey?.(card);
-                const deleteCardKey = getDeleteCardKey(card);
-                const chainKey = String(card?.queryChainName || "")
-                  .trim()
-                  .toLowerCase();
-                const symbolKey = String(card?.shortName || "")
-                  .trim()
-                  .toLowerCase();
-                const showGasFeeIcon =
-                  !!chainKey &&
-                  !!symbolKey &&
-                  gasFeeSymbolByChain.get(chainKey) === symbolKey;
-                const isCardHidden =
-                  hideNumbers ||
-                  (cardHideKey && hideNumbersByCard?.[cardHideKey]);
-                const textColor =
-                  percentageChange > 0
-                    ? isBlackText
-                      ? "#00EE88"
-                      : "#00EE88"
-                    : isBlackText
-                      ? "#F44336"
-                      : "#F44336";
+                    const { card, dataIndex, stableId } = item;
+                    const stableIndex =
+                      Number.isInteger(dataIndex) && dataIndex >= 0
+                        ? dataIndex
+                        : uiIndex;
+                    const isBlackText = [""].includes(card.shortName);
+                    const priceChange =
+                      priceChanges[card.shortName]?.priceChange || "0";
+                    const percentageChange =
+                      priceChanges[card.shortName]?.percentageChange || "0";
+                    if (
+                      shouldHideOtherCards &&
+                      selectedCardIndex != null &&
+                      selectedCardIndex !== stableIndex
+                    ) {
+                      return null;
+                    }
+                    const entryKey = getCardKey(card, stableIndex);
+                    const entryAnim = getEntryAnim(entryKey);
+                    const cardHideKey = getCardHideKey?.(card);
+                    const deleteCardKey = getDeleteCardKey(card);
+                    const chainKey = String(card?.queryChainName || "")
+                      .trim()
+                      .toLowerCase();
+                    const symbolKey = String(card?.shortName || "")
+                      .trim()
+                      .toLowerCase();
+                    const showGasFeeIcon =
+                      !!chainKey &&
+                      !!symbolKey &&
+                      gasFeeSymbolByChain.get(chainKey) === symbolKey;
+                    const isCardHidden =
+                      hideNumbers ||
+                      (cardHideKey && hideNumbersByCard?.[cardHideKey]);
+                    const textColor =
+                      percentageChange > 0
+                        ? isBlackText
+                          ? "#00EE88"
+                          : "#00EE88"
+                        : isBlackText
+                          ? "#F44336"
+                          : "#F44336";
 
-                return (
-                  <CardItem
-                    key={entryKey}
-                    card={card}
-                    index={stableIndex}
-                    orderIndex={uiIndex}
-                    modalVisible={modalVisible && !isClosing}
-                    hideOtherCards={shouldHideOtherCards}
-                    isClosing={isClosing}
-                    elevateDuringReturn={elevateDuringReturn}
-                    selectedCardIndex={selectedCardIndex}
-                    selectCardOffsetOpenAni={selectCardOffsetOpenAni}
-                    selectCardOffsetCloseAni={selectCardOffsetCloseAni}
-                    VaultScreenStyle={VaultScreenStyle}
-                    isBlackText={isBlackText}
-                    cardRefs={cardRefs}
-                    initCardPosition={initCardPosition}
-                    onCardLayout={onCardLayout}
-                    handleCardPress={handleCardPress}
-                    isCardExpanded={isCardExpanded}
-                    formatBalance={formatBalance}
-                    formatFiatBalance={formatFiatBalance}
-                    currencyUnit={currencyUnit}
-                    textColor={textColor}
-                    percentageChange={percentageChange}
-                    getConvertedBalance={getConvertedBalance}
-                    handleQRCodePress={handleQRCodePress}
-                    onColorExtracted={onColorExtracted}
-                    entryAnim={entryAnim}
-                    entryOffset={entryOffset}
-                    isDataLoading={
-                      isBalanceSyncing ||
-                      ((isInitialLoading || isPriceLoading) &&
-                        modalVisible &&
-                        !isClosing) ||
-                      refreshing ||
-                      (tabRefreshLoading && modalVisible)
-                    }
-                    isDarkMode={isDarkMode}
-                    hideNumbers={isCardHidden}
-                    freezeNumbers={freezeNumbers}
-                    bringToFrontCardIndex={bringToFrontCardIndex}
-                    onToggleCardHide={onToggleCardHide}
-                    scrollYOffset={scrollYOffset}
-                    scrollContainerAbsYRef={scrollContainerAbsYRef}
-                    cardLayoutYRef={cardLayoutYRef}
-                    isDeleteSelected={selectedDeleteKeySet.has(deleteCardKey)}
-                    showGasFeeIcon={showGasFeeIcon}
-                    onDeletePress={(pressedCard) =>
-                      onRequestDeleteCard?.(pressedCard, deleteCardKey)
-                    }
-                    scrollLock={scrollLock}
-                    isJiggleMode={isJiggleMode}
-                    onCardLongPress={handleCardLongPress}
-                    onCardDragReady={handleCardDragReady}
-                    onCardDragMove={handleCardDragMove}
-                    onCardDragEnd={handleCardDragEnd}
-                    t={t}
-                  />
-                );
-              })}
+                    return (
+                      <CardItem
+                        key={entryKey}
+                        card={card}
+                        stableId={stableId}
+                        draggingStableId={draggingStableId}
+                        latestSwapEvent={latestSwapEvent}
+                        index={stableIndex}
+                        orderIndex={uiIndex}
+                        modalVisible={modalVisible && !isClosing}
+                        hideOtherCards={shouldHideOtherCards}
+                        isClosing={isClosing}
+                        elevateDuringReturn={elevateDuringReturn}
+                        selectedCardIndex={selectedCardIndex}
+                        selectCardOffsetOpenAni={selectCardOffsetOpenAni}
+                        selectCardOffsetCloseAni={selectCardOffsetCloseAni}
+                        VaultScreenStyle={VaultScreenStyle}
+                        isBlackText={isBlackText}
+                        cardRefs={cardRefs}
+                        initCardPosition={initCardPosition}
+                        onCardLayout={onCardLayout}
+                        handleCardPress={handleCardPress}
+                        isCardExpanded={isCardExpanded}
+                        formatBalance={formatBalance}
+                        formatFiatBalance={formatFiatBalance}
+                        currencyUnit={currencyUnit}
+                        textColor={textColor}
+                        percentageChange={percentageChange}
+                        getConvertedBalance={getConvertedBalance}
+                        handleQRCodePress={handleQRCodePress}
+                        onColorExtracted={onColorExtracted}
+                        entryAnim={entryAnim}
+                        entryOffset={entryOffset}
+                        isDataLoading={
+                          isBalanceSyncing ||
+                          ((isInitialLoading || isPriceLoading) &&
+                            modalVisible &&
+                            !isClosing) ||
+                          refreshing ||
+                          (tabRefreshLoading && modalVisible)
+                        }
+                        isDarkMode={isDarkMode}
+                        hideNumbers={isCardHidden}
+                        freezeNumbers={freezeNumbers}
+                        bringToFrontCardIndex={bringToFrontCardIndex}
+                        onToggleCardHide={onToggleCardHide}
+                        scrollYOffset={scrollYOffset}
+                        scrollContainerAbsYRef={scrollContainerAbsYRef}
+                        cardLayoutYRef={cardLayoutYRef}
+                        isDeleteSelected={selectedDeleteKeySet.has(
+                          deleteCardKey,
+                        )}
+                        showGasFeeIcon={showGasFeeIcon}
+                        onDeletePress={(pressedCard) =>
+                          onRequestDeleteCard?.(pressedCard, deleteCardKey)
+                        }
+                        scrollLock={scrollLock}
+                        isJiggleMode={isJiggleMode}
+                        onCardLongPress={handleCardLongPress}
+                        onCardDragReady={handleCardDragReady}
+                        onCardDragMove={handleCardDragMove}
+                        onCardDragEnd={handleCardDragEnd}
+                        t={t}
+                      />
+                    );
+                  })}
             </Reanimated.View>
           </Pressable>
         </View>

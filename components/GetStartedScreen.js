@@ -7,12 +7,12 @@ import React, { useCallback, useContext, useMemo, useState } from "react";
 import { Text, View, TouchableOpacity, Linking } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTranslation } from "react-i18next";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { VaultScreenStylesRoot, makeSharedPrimitives } from "../styles/styles";
 import EmptyWalletView from "./AssetsScreen/EmptyWalletView";
 import { DarkModeContext } from "../utils/DeviceContext";
 
-const GetStartedScreen = ({ onGetStarted }) => {
+const GetStartedScreen = ({ onScreenFocus }) => {
   const { isDarkMode } = useContext(DarkModeContext);
   const VaultScreenStyle = VaultScreenStylesRoot(isDarkMode);
   const themePrimitives = makeSharedPrimitives(isDarkMode);
@@ -28,14 +28,18 @@ const GetStartedScreen = ({ onGetStarted }) => {
   }, [navigation]);
 
   const handleContinue = useCallback(() => {
-    if (typeof onGetStarted === "function") {
-      onGetStarted();
-    }
-  }, [onGetStarted]);
+    navigation.navigate("AddItem");
+  }, [navigation]);
 
   const handlePurchasePress = useCallback(() => {
     Linking.openURL("https://lukkey.com/lukkey").catch(() => {});
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      onScreenFocus?.();
+    }, [onScreenFocus]),
+  );
 
   const hintAreaStyle = useMemo(() => {
     if (!screenHeight || !cardHeight) return { flex: 1 };

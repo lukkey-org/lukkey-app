@@ -60,7 +60,6 @@ import CheckStatusModal, {
 } from "./components/modal/CheckStatusModal";
 import AppInner, { AppBootSplash } from "./components/app/AppShell";
 import AssetsHeaderActions from "./components/app/AssetsHeaderActions";
-import BluetoothFloatingButton from "./components/app/BluetoothFloatingButton";
 import GeneralHeaderActions from "./components/app/GeneralHeaderActions";
 import {
   CryptoProvider,
@@ -83,7 +82,6 @@ try {
 import { hexStringToUint32Array, uint32ArrayToHexString } from "./env/hexUtils";
 import { createHandleDevicePress } from "./utils/handleDevicePress";
 import { scanDevices } from "./utils/scanDevices";
-import { handleBluetoothPairing as handleBluetoothPairingUtil } from "./utils/handleBluetoothPairing";
 import createMonitorVerificationCode from "./utils/monitorVerificationCode";
 import { clearWalletOnPinTimeout } from "./utils/clearWalletOnPinTimeout";
 import { createStopMonitoringVerificationCode } from "./utils/stopMonitoringVerificationCode";
@@ -308,17 +306,10 @@ function AppContent({
     };
   }, [bleVisible, bleManagerRef]);
 
-  const handleBluetoothPairing = () =>
-    handleBluetoothPairingUtil({
-      t,
-      scanDevices,
-      isScanning,
-      setIsScanning,
-      bleManagerRef,
-      setDevices,
-      setBleVisible,
-      openExclusiveModal,
-    });
+  const handleGetStartedScreenFocus = React.useCallback(() => {
+    setBleVisible(false);
+    setIsScanning(false);
+  }, []);
 
   const sendPinFailOnCancel = React.useCallback(
     async (device) => {
@@ -1221,8 +1212,12 @@ function AppContent({
                     </TouchableOpacity>
                   ) : route.params?.isCardEditMode ? (
                     <TouchableOpacity
-                      onPress={() => navigation.setParams({ requestBulkDelete: true })}
-                      disabled={Number(route.params?.selectedDeleteCount || 0) <= 0}
+                      onPress={() =>
+                        navigation.setParams({ requestBulkDelete: true })
+                      }
+                      disabled={
+                        Number(route.params?.selectedDeleteCount || 0) <= 0
+                      }
                       style={{
                         paddingLeft: headerEdgePadding,
                         opacity:
@@ -1272,7 +1267,7 @@ function AppContent({
             {(props) => (
               <GetStartedScreen
                 {...props}
-                onGetStarted={handleBluetoothPairing}
+                onScreenFocus={handleGetStartedScreenFocus}
               />
             )}
           </Tab.Screen>
@@ -1284,12 +1279,6 @@ function AppContent({
           )}
         </Tab.Screen>
       </Tab.Navigator>
-      <BluetoothFloatingButton
-        visible={!isPairedOrDev}
-        bottomBackgroundColor={bottomBackgroundColor}
-        buttonColor={tabBarActiveTintColor}
-        onPress={handleBluetoothPairing}
-      />
       <StatusBar
         backgroundColor={isDarkMode ? "#21201E" : "#FFFFFF"}
         barStyle={isDarkMode ? "light-content" : "dark-content"}

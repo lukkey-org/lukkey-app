@@ -17,6 +17,10 @@ import {
   Easing,
   PanResponder,
 } from "react-native";
+import Reanimated, {
+  Easing as ReanimatedEasing,
+  LinearTransition,
+} from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { MaterialIcons as Icon, FontAwesome6 } from "@expo/vector-icons";
 import DataSkeleton from "./DataSkeleton";
@@ -71,6 +75,9 @@ import {
  */
 const CardItem = ({
   card,
+  stableId = null,
+  draggingStableId = null,
+  latestSwapEvent = null,
   index,
   modalVisible,
   hideOtherCards,
@@ -133,6 +140,11 @@ const CardItem = ({
 
   // Typical colors are received and processed by the parent, and the current component does not require local storage.
   // Value snapshot for display during freeze phase (during closing/homing animation)
+  const [isActiveDrag, setIsActiveDrag] = useState(false);
+  const [isSwapLayerLocked, setIsSwapLayerLocked] = useState(false);
+  const [isSwapDetouring, setIsSwapDetouring] = useState(false);
+  const [isSwapPostSwitchBoost, setIsSwapPostSwitchBoost] = useState(false);
+  const [swapForcedOrderIndex, setSwapForcedOrderIndex] = useState(null);
   const lastFormattedRef = React.useRef("0.00");
   const lastFiatRef = React.useRef("0.00");
   const pressLockRef = React.useRef(false);
@@ -141,30 +153,48 @@ const CardItem = ({
   const jiggleDelayTimerRef = React.useRef(null);
   const jiggleSeedRef = React.useRef(Math.random());
   const dragTranslateY = React.useRef(new Animated.Value(0)).current;
-  const dragHoldTimerRef = React.useRef(null);
   const dragReadyRef = React.useRef(false);
+  const hasDraggedRef = React.useRef(false);
   const skipNextJiggleTapToggleRef = React.useRef(false);
   const dragMoveLogTsRef = React.useRef(0);
   const dragMoveCallLogTsRef = React.useRef(0);
   const dragStartScrollYRef = React.useRef(0);
   const dragTouchOffsetRef = React.useRef(0);
+  const dragTopBoundaryYRef = React.useRef(null);
+  const dragBaseLayoutYRef = React.useRef(null);
+  const dragAnchorTopYRef = React.useRef(null);
+  const lastDragCardTopYRef = React.useRef(null);
+  const swapDetourOffsetY = React.useRef(new Animated.Value(0)).current;
+  const handledSwapSeqRef = React.useRef(0);
+  const swapLayerUnlockTimerRef = React.useRef(null);
+  const swapPostSwitchClearTimerRef = React.useRef(null);
+  const pendingSwapExpectedOrderRef = React.useRef(null);
+  const TEMP_EDIT_Y_LOG_INTERVAL_MS = 120;
+  const TEMP_EDIT_Y_JUMP_THRESHOLD = 28;
+  const SWAP_DETOUR_OUT_MS = 70;
+  const SWAP_DETOUR_RETURN_MS = 70;
+  const SWAP_POST_SWITCH_HOLD_MS = 220;
 
   // Unified management of card levels:
-  // - Basics: The smaller the index (the higher the index), the larger the zIndex
+  // - Basics: The larger the order index (visually lower card), the larger the zIndex
   // - Opening phase: The selected card is temporarily raised
   // - Return phase: The first 100ms after starting homing (elevateDuringReturn=true) remains elevated, and then the basic sequence is restored.
   const zOrderIndex = Number.isFinite(orderIndex) ? orderIndex : index;
-  const baseZ = 1000 - zOrderIndex;
+  const effectiveZOrderIndex = Number.isFinite(swapForcedOrderIndex)
+    ? swapForcedOrderIndex
+    : zOrderIndex;
+  const baseZ = 1000 + effectiveZOrderIndex;
   const shouldTemporarilyElevate = bringToFrontCardIndex === index;
   const isSelectedDuringModal =
     selectedCardIndex === index &&
     ((modalVisible && !isClosing) || (isClosing && elevateDuringReturn));
-  const cardZIndex = shouldTemporarilyElevate
+  const baseCardZIndex = shouldTemporarilyElevate
     ? baseZ + 3000
     : isSelectedDuringModal
       ? baseZ + 1000
       : baseZ;
-  const containerZIndex = shouldTemporarilyElevate ? cardZIndex : 0;
+  const cardZIndex = baseCardZIndex;
+  const containerZIndex = cardZIndex;
 
   const shouldHideOtherCards =
     hideOtherCards && selectedCardIndex != null && selectedCardIndex !== index;
@@ -307,54 +337,48 @@ const CardItem = ({
     }
   };
 
-  const clearDragHoldTimer = () => {
-    if (dragHoldTimerRef.current) {
-      clearTimeout(dragHoldTimerRef.current);
-      dragHoldTimerRef.current = null;
-    }
-  };
-
-  const startDragHoldTimer = React.useCallback(() => {
-    if (!shouldJiggle) return;
-    clearDragHoldTimer();
-    dragReadyRef.current = false;
-    dragHoldTimerRef.current = setTimeout(() => {
-      dragHoldTimerRef.current = null;
-      dragReadyRef.current = true;
-      onCardDragReady?.(card, index);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(
-        () => {},
-      );
-      setTimeout(() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
-      }, 60);
-      setTimeout(() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
-      }, 120);
-    }, 500);
+  const markDragReady = React.useCallback(() => {
+    if (!shouldJiggle || dragReadyRef.current) return;
+    dragReadyRef.current = true;
+    hasDraggedRef.current = false;
+    onCardDragReady?.(card, index);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
   }, [card, index, onCardDragReady, shouldJiggle]);
 
-  const cancelDragHoldTimer = React.useCallback(() => {
-    clearDragHoldTimer();
+  const getTopCardBoundaryY = React.useCallback(() => {
+    const layoutList = cardLayoutYRef?.current;
+    if (!Array.isArray(layoutList) || layoutList.length === 0) return null;
+    let minLayoutY = Infinity;
+    for (let i = 0; i < layoutList.length; i += 1) {
+      const y = Number(layoutList[i]);
+      if (!Number.isFinite(y) || y < 0) continue;
+      if (y < minLayoutY) minLayoutY = y;
+    }
+    if (!Number.isFinite(minLayoutY)) return null;
+    const containerTop = Number(scrollContainerAbsYRef?.current ?? 0);
+    const currentScrollY = Number(scrollYOffset?.current ?? 0);
+    return containerTop + minLayoutY - currentScrollY;
+  }, [cardLayoutYRef, scrollContainerAbsYRef, scrollYOffset]);
+
+  const resetDragState = React.useCallback(() => {
     dragReadyRef.current = false;
+    hasDraggedRef.current = false;
+    dragTopBoundaryYRef.current = null;
+    dragBaseLayoutYRef.current = null;
+    dragAnchorTopYRef.current = null;
+    lastDragCardTopYRef.current = null;
   }, []);
 
   const panResponder = React.useMemo(
     () =>
       PanResponder.create({
-        onStartShouldSetPanResponder: () =>
-          shouldJiggle && dragReadyRef.current,
-        onStartShouldSetPanResponderCapture: () =>
-          shouldJiggle && dragReadyRef.current,
-        onMoveShouldSetPanResponder: (_evt, gestureState) =>
-          shouldJiggle &&
-          dragReadyRef.current &&
-          (Math.abs(gestureState.dy) > 3 || Math.abs(gestureState.dx) > 3),
-        onMoveShouldSetPanResponderCapture: (_evt, gestureState) =>
-          shouldJiggle &&
-          dragReadyRef.current &&
-          (Math.abs(gestureState.dy) > 3 || Math.abs(gestureState.dx) > 3),
+        onStartShouldSetPanResponder: () => shouldJiggle,
+        onStartShouldSetPanResponderCapture: () => shouldJiggle,
+        onMoveShouldSetPanResponder: () => shouldJiggle,
+        onMoveShouldSetPanResponderCapture: () => shouldJiggle,
         onPanResponderGrant: (_evt, gestureState) => {
+          setIsActiveDrag(true);
+          markDragReady();
           if (scrollLock) {
             scrollLock.value = true;
           }
@@ -363,12 +387,39 @@ const CardItem = ({
           dragStartScrollYRef.current = currentScrollY;
           const containerTop = Number(scrollContainerAbsYRef?.current ?? 0);
           const layoutY = Number(cardLayoutYRef?.current?.[index]);
+          const topBoundaryY = getTopCardBoundaryY();
+          dragTopBoundaryYRef.current = Number.isFinite(topBoundaryY)
+            ? topBoundaryY
+            : null;
+          dragBaseLayoutYRef.current = Number.isFinite(layoutY)
+            ? layoutY
+            : null;
           if (Number.isFinite(layoutY)) {
             const cardTopOnScreen = containerTop + layoutY - currentScrollY;
             dragTouchOffsetRef.current =
               Number(gestureState?.y0 ?? 0) - cardTopOnScreen;
+            console.log("[TEMP][EDIT_CARD_Y][GRANT]", {
+              name: card?.name || card?.shortName,
+              index,
+              touchY: Number(gestureState?.y0 ?? 0),
+              layoutY,
+              cardTopOnScreen,
+              scrollY: currentScrollY,
+              containerTop,
+              touchOffset: dragTouchOffsetRef.current,
+              topBoundaryY: dragTopBoundaryYRef.current,
+            });
           } else {
             dragTouchOffsetRef.current = 0;
+            console.log("[TEMP][EDIT_CARD_Y][GRANT][NO_LAYOUT]", {
+              name: card?.name || card?.shortName,
+              index,
+              touchY: Number(gestureState?.y0 ?? 0),
+              layoutY,
+              scrollY: currentScrollY,
+              containerTop,
+              topBoundaryY: dragTopBoundaryYRef.current,
+            });
           }
         },
         onPanResponderMove: (_evt, gestureState) => {
@@ -378,40 +429,137 @@ const CardItem = ({
           const containerTop = Number(scrollContainerAbsYRef?.current ?? 0);
           const currentScrollY = Number(scrollYOffset?.current ?? 0);
           const layoutY = Number(cardLayoutYRef?.current?.[index]);
-          const cardTopOnScreen = Number.isFinite(layoutY)
-            ? containerTop + layoutY - currentScrollY
+          const activeBaseLayoutY = Number.isFinite(dragBaseLayoutYRef.current)
+            ? dragBaseLayoutYRef.current
+            : Number.isFinite(layoutY)
+              ? layoutY
+              : null;
+          const cardTopOnScreen = Number.isFinite(activeBaseLayoutY)
+            ? containerTop + activeBaseLayoutY - currentScrollY
             : 0;
           const desiredCardTop =
             Number(gestureState.moveY ?? 0) - dragTouchOffsetRef.current;
-          const adjustedDy = desiredCardTop - cardTopOnScreen;
+          const topCardBoundaryY = Number.isFinite(dragTopBoundaryYRef.current)
+            ? dragTopBoundaryYRef.current
+            : getTopCardBoundaryY();
+          const clampedCardTop = Number.isFinite(topCardBoundaryY)
+            ? Math.max(desiredCardTop, topCardBoundaryY)
+            : desiredCardTop;
+          const adjustedDy = clampedCardTop - cardTopOnScreen;
+          const cardTopYAfterAdjust = cardTopOnScreen + adjustedDy;
+          const prevCardTopY = lastDragCardTopYRef.current;
+          const deltaFromLast = Number.isFinite(prevCardTopY)
+            ? cardTopYAfterAdjust - prevCardTopY
+            : 0;
+          const isJump = Number.isFinite(prevCardTopY)
+            ? Math.abs(deltaFromLast) >= TEMP_EDIT_Y_JUMP_THRESHOLD
+            : false;
+          dragAnchorTopYRef.current = clampedCardTop;
+          const now = Date.now();
+          if (
+            isJump ||
+            now - dragMoveLogTsRef.current >= TEMP_EDIT_Y_LOG_INTERVAL_MS
+          ) {
+            dragMoveLogTsRef.current = now;
+            console.log("[TEMP][EDIT_CARD_Y][MOVE]", {
+              name: card?.name || card?.shortName,
+              index,
+              touchY: Number(gestureState.moveY ?? 0),
+              layoutY,
+              baseLayoutY: activeBaseLayoutY,
+              scrollY: currentScrollY,
+              containerTop,
+              cardTopOnScreen,
+              desiredCardTop,
+              clampedCardTop,
+              topBoundaryY: topCardBoundaryY,
+              adjustedDy,
+              cardTopYAfterAdjust,
+              prevCardTopY,
+              deltaFromLast,
+              isJump,
+            });
+          }
+          lastDragCardTopYRef.current = cardTopYAfterAdjust;
+          const crossedDragThreshold =
+            Math.abs(adjustedDy) > 3 || Math.abs(gestureState.dx) > 3;
+          if (crossedDragThreshold) hasDraggedRef.current = true;
           dragTranslateY.setValue(adjustedDy);
-          onCardDragMove?.({
-            card,
-            index,
-            dy: adjustedDy,
-            moveY: gestureState.moveY,
-          });
+          if (!crossedDragThreshold) return;
+          const swapBaseDelta = Number(
+            onCardDragMove?.({
+              card,
+              index,
+              dy: adjustedDy,
+              moveY: gestureState.moveY,
+            }) ?? 0,
+          );
+          if (Number.isFinite(swapBaseDelta) && Math.abs(swapBaseDelta) > 0.5) {
+            if (Number.isFinite(activeBaseLayoutY)) {
+              dragBaseLayoutYRef.current = activeBaseLayoutY + swapBaseDelta;
+            }
+          }
         },
         onPanResponderRelease: (_evt, gestureState) => {
-          if (dragReadyRef.current) {
+          setIsActiveDrag(false);
+          const wasDragged = hasDraggedRef.current;
+          if (wasDragged && dragReadyRef.current) {
             const containerTop = Number(scrollContainerAbsYRef?.current ?? 0);
             const currentScrollY = Number(scrollYOffset?.current ?? 0);
             const layoutY = Number(cardLayoutYRef?.current?.[index]);
-            const cardTopOnScreen = Number.isFinite(layoutY)
-              ? containerTop + layoutY - currentScrollY
+            const activeBaseLayoutY = Number.isFinite(
+              dragBaseLayoutYRef.current,
+            )
+              ? dragBaseLayoutYRef.current
+              : Number.isFinite(layoutY)
+                ? layoutY
+                : null;
+            const cardTopOnScreen = Number.isFinite(activeBaseLayoutY)
+              ? containerTop + activeBaseLayoutY - currentScrollY
               : 0;
             const desiredCardTop =
               Number(gestureState.moveY ?? 0) - dragTouchOffsetRef.current;
-            const adjustedDy = desiredCardTop - cardTopOnScreen;
+            const topCardBoundaryY = Number.isFinite(
+              dragTopBoundaryYRef.current,
+            )
+              ? dragTopBoundaryYRef.current
+              : getTopCardBoundaryY();
+            const clampedCardTop = Number.isFinite(topCardBoundaryY)
+              ? Math.max(desiredCardTop, topCardBoundaryY)
+              : desiredCardTop;
+            const adjustedDy = clampedCardTop - cardTopOnScreen;
+            console.log("[TEMP][EDIT_CARD_Y][RELEASE]", {
+              name: card?.name || card?.shortName,
+              index,
+              touchY: Number(gestureState.moveY ?? 0),
+              layoutY,
+              baseLayoutY: activeBaseLayoutY,
+              scrollY: currentScrollY,
+              containerTop,
+              cardTopOnScreen,
+              desiredCardTop,
+              clampedCardTop,
+              topBoundaryY: topCardBoundaryY,
+              adjustedDy,
+            });
             onCardDragEnd?.({
               card,
               index,
               dy: adjustedDy,
               moveY: gestureState.moveY,
             });
+          } else if (shouldJiggle) {
+            if (skipNextJiggleTapToggleRef.current) {
+              skipNextJiggleTapToggleRef.current = false;
+            } else {
+              console.log("[BATCH_DELETE][CARD] card touchEnd toggle", {
+                name: card?.name || card?.shortName,
+                index,
+              });
+              onDeletePress?.(card);
+            }
           }
-          dragReadyRef.current = false;
-          clearDragHoldTimer();
+          resetDragState();
           if (scrollLock) {
             scrollLock.value = false;
           }
@@ -422,9 +570,11 @@ const CardItem = ({
           }).start();
         },
         onPanResponderTerminate: () => {
-          onCardDragEnd?.({ card, index, dy: 0, moveY: 0, terminated: true });
-          clearDragHoldTimer();
-          dragReadyRef.current = false;
+          setIsActiveDrag(false);
+          if (hasDraggedRef.current) {
+            onCardDragEnd?.({ card, index, dy: 0, moveY: 0, terminated: true });
+          }
+          resetDragState();
           if (scrollLock) {
             scrollLock.value = false;
           }
@@ -439,10 +589,12 @@ const CardItem = ({
       card,
       dragTranslateY,
       index,
+      markDragReady,
+      onDeletePress,
       onCardDragEnd,
       onCardDragMove,
-      onCardDragReady,
-      clearDragHoldTimer,
+      getTopCardBoundaryY,
+      resetDragState,
       scrollLock,
       shouldJiggle,
     ],
@@ -458,6 +610,22 @@ const CardItem = ({
         jiggleLoopRef.current.stop();
         jiggleLoopRef.current = null;
       }
+      setIsActiveDrag(false);
+      setIsSwapLayerLocked(false);
+      setIsSwapDetouring(false);
+      setIsSwapPostSwitchBoost(false);
+      setSwapForcedOrderIndex(null);
+      pendingSwapExpectedOrderRef.current = null;
+      if (swapLayerUnlockTimerRef.current) {
+        clearTimeout(swapLayerUnlockTimerRef.current);
+        swapLayerUnlockTimerRef.current = null;
+      }
+      if (swapPostSwitchClearTimerRef.current) {
+        clearTimeout(swapPostSwitchClearTimerRef.current);
+        swapPostSwitchClearTimerRef.current = null;
+      }
+      swapDetourOffsetY.stopAnimation();
+      swapDetourOffsetY.setValue(0);
       jiggleAnim.stopAnimation();
       jiggleAnim.setValue(0);
       return;
@@ -512,7 +680,160 @@ const CardItem = ({
         jiggleLoopRef.current = null;
       }
     };
-  }, [jiggleAnim, shouldJiggle]);
+  }, [jiggleAnim, shouldJiggle, swapDetourOffsetY]);
+
+  React.useEffect(
+    () => () => {
+      if (swapLayerUnlockTimerRef.current) {
+        clearTimeout(swapLayerUnlockTimerRef.current);
+        swapLayerUnlockTimerRef.current = null;
+      }
+      if (swapPostSwitchClearTimerRef.current) {
+        clearTimeout(swapPostSwitchClearTimerRef.current);
+        swapPostSwitchClearTimerRef.current = null;
+      }
+    },
+    [],
+  );
+
+  React.useEffect(() => {
+    const swapSeq = Number(latestSwapEvent?.seq);
+    if (!Number.isFinite(swapSeq) || swapSeq <= 0) return;
+    if (handledSwapSeqRef.current === swapSeq) return;
+    if (!stableId) return;
+    if (
+      draggingStableId &&
+      latestSwapEvent?.movingId &&
+      latestSwapEvent.movingId !== draggingStableId
+    ) {
+      return;
+    }
+    handledSwapSeqRef.current = swapSeq;
+    const isMovingCard = latestSwapEvent?.movingId === stableId;
+    const isTargetCard = latestSwapEvent?.targetId === stableId;
+    if (!isMovingCard && !isTargetCard) return;
+    const currentSwapSeq = swapSeq;
+    const direction = latestSwapEvent?.direction;
+    const movingLayoutY = Number(latestSwapEvent?.movingLayoutY);
+    const targetLayoutY = Number(latestSwapEvent?.targetLayoutY);
+    const movingOrderAfter = Number(latestSwapEvent?.movingOrderAfter);
+    const targetOrderAfter = Number(latestSwapEvent?.targetOrderAfter);
+    const layoutGap =
+      Number.isFinite(movingLayoutY) && Number.isFinite(targetLayoutY)
+        ? Math.abs(movingLayoutY - targetLayoutY)
+        : 72;
+    // Keep detour very subtle and short; avoid a spring-like tail near settle.
+    const detourDistance = Math.max(8, Math.min(28, layoutGap * 0.22));
+    // Target card should detour toward its final slot direction to avoid
+    // "drop then return" at the end of a swap.
+    const targetDeltaY =
+      Number.isFinite(movingLayoutY) && Number.isFinite(targetLayoutY)
+        ? movingLayoutY - targetLayoutY
+        : direction === "down"
+          ? -1
+          : 1;
+    const detourDirection = targetDeltaY === 0 ? 0 : targetDeltaY > 0 ? 1 : -1;
+
+    if (isMovingCard) {
+      setIsSwapDetouring(false);
+      swapDetourOffsetY.stopAnimation();
+      swapDetourOffsetY.setValue(0);
+      pendingSwapExpectedOrderRef.current = Number.isFinite(movingOrderAfter)
+        ? movingOrderAfter
+        : null;
+      if (swapPostSwitchClearTimerRef.current) {
+        clearTimeout(swapPostSwitchClearTimerRef.current);
+        swapPostSwitchClearTimerRef.current = null;
+      }
+      setSwapForcedOrderIndex(
+        Number.isFinite(targetOrderAfter) ? targetOrderAfter : null,
+      );
+      setIsSwapPostSwitchBoost(false);
+      setIsSwapLayerLocked(true);
+      if (swapLayerUnlockTimerRef.current) {
+        clearTimeout(swapLayerUnlockTimerRef.current);
+      }
+      swapLayerUnlockTimerRef.current = setTimeout(() => {
+        if (handledSwapSeqRef.current !== currentSwapSeq) return;
+        setIsSwapLayerLocked(false);
+        setSwapForcedOrderIndex(
+          Number.isFinite(movingOrderAfter) ? movingOrderAfter : null,
+        );
+        setIsSwapPostSwitchBoost(true);
+        swapPostSwitchClearTimerRef.current = setTimeout(() => {
+          if (handledSwapSeqRef.current !== currentSwapSeq) return;
+          setIsSwapPostSwitchBoost(false);
+          setSwapForcedOrderIndex(null);
+          pendingSwapExpectedOrderRef.current = null;
+          swapPostSwitchClearTimerRef.current = null;
+        }, SWAP_POST_SWITCH_HOLD_MS);
+        swapLayerUnlockTimerRef.current = null;
+      }, SWAP_DETOUR_OUT_MS);
+      return;
+    }
+
+    if (swapLayerUnlockTimerRef.current) {
+      clearTimeout(swapLayerUnlockTimerRef.current);
+      swapLayerUnlockTimerRef.current = null;
+    }
+    if (swapPostSwitchClearTimerRef.current) {
+      clearTimeout(swapPostSwitchClearTimerRef.current);
+      swapPostSwitchClearTimerRef.current = null;
+    }
+    pendingSwapExpectedOrderRef.current = null;
+    setIsSwapLayerLocked(false);
+    setIsSwapPostSwitchBoost(false);
+    setSwapForcedOrderIndex(null);
+    swapDetourOffsetY.stopAnimation();
+    swapDetourOffsetY.setValue(0);
+    setIsSwapDetouring(true);
+    Animated.timing(swapDetourOffsetY, {
+      toValue: detourDistance * detourDirection,
+      duration: SWAP_DETOUR_OUT_MS,
+      easing: Easing.linear,
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (handledSwapSeqRef.current !== currentSwapSeq) return;
+      if (!finished) {
+        setIsSwapDetouring(false);
+        return;
+      }
+      Animated.timing(swapDetourOffsetY, {
+        toValue: 0,
+        duration: SWAP_DETOUR_RETURN_MS,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }).start(({ finished: settleFinished }) => {
+        if (handledSwapSeqRef.current !== currentSwapSeq) return;
+        setIsSwapDetouring(false);
+        if (settleFinished) {
+          swapDetourOffsetY.setValue(0);
+        }
+      });
+    });
+  }, [
+    draggingStableId,
+    latestSwapEvent,
+    stableId,
+    swapDetourOffsetY,
+    SWAP_DETOUR_OUT_MS,
+    SWAP_DETOUR_RETURN_MS,
+    SWAP_POST_SWITCH_HOLD_MS,
+  ]);
+
+  React.useEffect(() => {
+    if (!isSwapPostSwitchBoost) return;
+    const expectedOrder = Number(pendingSwapExpectedOrderRef.current);
+    if (!Number.isFinite(expectedOrder)) return;
+    if (zOrderIndex !== expectedOrder) return;
+    setIsSwapPostSwitchBoost(false);
+    setSwapForcedOrderIndex(null);
+    pendingSwapExpectedOrderRef.current = null;
+    if (swapPostSwitchClearTimerRef.current) {
+      clearTimeout(swapPostSwitchClearTimerRef.current);
+      swapPostSwitchClearTimerRef.current = null;
+    }
+  }, [isSwapPostSwitchBoost, zOrderIndex]);
 
   const combinedTranslateY = Animated.add(cardTranslateY, dragTranslateY);
   const jiggleParity = index % 2 === 0 ? 1 : -1;
@@ -533,6 +854,10 @@ const CardItem = ({
     inputRange: [-1, 0, 1],
     outputRange: [0.9995, 1, 1.0005],
   });
+  const swapLayoutTransition = React.useMemo(
+    () => LinearTransition.easing(ReanimatedEasing.linear).duration(180),
+    [],
+  );
 
   return (
     <>
@@ -542,17 +867,48 @@ const CardItem = ({
         selectedCardIndex={selectedCardIndex}
         onColorsChange={handleColorsChange}
       />
-      <View
+      <Reanimated.View
+        layout={
+          isJiggleMode && !isActiveDrag ? swapLayoutTransition : undefined
+        }
         style={[
           VaultScreenStyle.cardContainer,
-          shouldTemporarilyElevate && {
+          {
             zIndex: containerZIndex,
             elevation: Platform.OS === "android" ? containerZIndex : undefined,
             position: "relative",
           },
         ]}
         onLayout={(event) => {
-          onCardLayout?.(index, event.nativeEvent.layout.y);
+          const layoutY = Number(event?.nativeEvent?.layout?.y);
+          if (
+            shouldJiggle &&
+            isActiveDrag &&
+            Number.isFinite(layoutY) &&
+            Number.isFinite(dragAnchorTopYRef.current)
+          ) {
+            const containerTop = Number(scrollContainerAbsYRef?.current ?? 0);
+            const currentScrollY = Number(scrollYOffset?.current ?? 0);
+            const cardTopOnScreen = containerTop + layoutY - currentScrollY;
+            const anchoredDy = dragAnchorTopYRef.current - cardTopOnScreen;
+            dragTranslateY.setValue(anchoredDy);
+            dragBaseLayoutYRef.current = layoutY;
+            lastDragCardTopYRef.current = dragAnchorTopYRef.current;
+          }
+          if (
+            shouldJiggle &&
+            isActiveDrag &&
+            Number.isFinite(layoutY) &&
+            Date.now() - dragMoveCallLogTsRef.current >= 120
+          ) {
+            dragMoveCallLogTsRef.current = Date.now();
+            console.log("[TEMP][EDIT_CARD_Y][LAYOUT]", {
+              name: card?.name || card?.shortName,
+              index,
+              layoutY,
+            });
+          }
+          onCardLayout?.(index, layoutY);
         }}
         ref={(el) => {
           cardRefs.current[index] = el;
@@ -561,7 +917,9 @@ const CardItem = ({
       >
         <TouchableHighlight
           underlayColor={"transparent"}
+          activeOpacity={1}
           key={`${card.shortName}_${index}`}
+          pointerEvents={shouldJiggle ? "box-none" : "auto"}
           onPress={handlePress}
           onPressIn={() => {
             if (!modalVisible && !shouldJiggle) {
@@ -584,6 +942,7 @@ const CardItem = ({
               {
                 transform: [
                   { translateY: combinedTranslateY },
+                  { translateY: swapDetourOffsetY },
                   { rotate: jiggleRotate },
                   { translateX: jiggleTranslateX },
                   { translateY: jiggleTranslateY },
@@ -643,25 +1002,6 @@ const CardItem = ({
             )}
             <View
               {...(shouldJiggle ? panResponder.panHandlers : {})}
-              onTouchStart={startDragHoldTimer}
-              onTouchEnd={() => {
-                const wasDragReady = dragReadyRef.current;
-                cancelDragHoldTimer();
-                if (!shouldJiggle) return;
-                if (skipNextJiggleTapToggleRef.current) {
-                  skipNextJiggleTapToggleRef.current = false;
-                  console.log("[BATCH_DELETE][CARD] touchEnd skipped(icon)");
-                  return;
-                }
-                if (!wasDragReady) {
-                  console.log("[BATCH_DELETE][CARD] card touchEnd toggle", {
-                    name: card?.name || card?.shortName,
-                    index,
-                  });
-                  onDeletePress?.(card);
-                }
-              }}
-              onTouchCancel={cancelDragHoldTimer}
               style={[
                 VaultScreenStyle.assetPageCard,
                 index === 0
@@ -699,7 +1039,9 @@ const CardItem = ({
                           />
                         ) : null}
                         <Image
-                          source={i === 0 ? resolvedAssetIcon : resolvedChainIcon}
+                          source={
+                            i === 0 ? resolvedAssetIcon : resolvedChainIcon
+                          }
                           style={
                             i === 0
                               ? VaultScreenStyle.cardIcon
@@ -981,7 +1323,7 @@ const CardItem = ({
             </View>
           </Animated.View>
         </TouchableHighlight>
-      </View>
+      </Reanimated.View>
     </>
   );
 };
@@ -1012,6 +1354,12 @@ export default React.memo(CardItem, (prev, next) => {
     prev.bringToFrontCardIndex === next.bringToFrontCardIndex &&
     prev.freezeNumbers === next.freezeNumbers &&
     prev.isJiggleMode === next.isJiggleMode &&
+    prev.stableId === next.stableId &&
+    prev.draggingStableId === next.draggingStableId &&
+    prev.latestSwapEvent?.seq === next.latestSwapEvent?.seq &&
+    prev.latestSwapEvent?.movingId === next.latestSwapEvent?.movingId &&
+    prev.latestSwapEvent?.targetId === next.latestSwapEvent?.targetId &&
+    prev.latestSwapEvent?.direction === next.latestSwapEvent?.direction &&
     prev.isDeleteSelected === next.isDeleteSelected &&
     prev.showGasFeeIcon === next.showGasFeeIcon &&
     prev.orderIndex === next.orderIndex
