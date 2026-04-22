@@ -21,7 +21,7 @@ const networkImages = {
   "Huobi ECO Chain": require("./../assets/icon/HTIcon.webp"),
   "IoTeX Network Mainnet": require("./../assets/icon/IOTXIcon.webp"),
   Litecoin: require("./../assets/icon/LTCIcon.webp"),
-  "OKX Chain": require("./../assets/icon/OKTIcon.webp"),
+  // "OKX Chain": require("./../assets/icon/OKTIcon.webp"), // Disabled.
   Optimism: require("./../assets/icon/OPIcon.webp"),
   Polygon: require("./../assets/icon/PolygonIcon.webp"),
   Ripple: require("./../assets/icon/XRPIcon.webp"),
@@ -59,7 +59,7 @@ const networks = [
   "Huobi ECO Chain",
   "IoTeX Network Mainnet",
   "Litecoin",
-  "OKX Chain",
+  // "OKX Chain", // Disabled.
   "Optimism",
   "Polygon",
   "Ripple",

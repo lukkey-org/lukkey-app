@@ -32,7 +32,7 @@ const chainMap = {
   FTM: "fantom",
   HTX: "huobi",
   IOTX: "iote",
-  OKT: "okb",
+  // OKT: "okb", // OKB/OKX Chain support disabled.
   POL: "polygon",
   ZKSYNC: "zksync",
   APT: "aptos",

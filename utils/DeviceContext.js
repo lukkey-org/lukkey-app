@@ -59,7 +59,7 @@ export const DeviceContext = createContext();
 export const DarkModeContext = createContext();
 
 const NEW_EXCHANGE_RATE_API_URL = metricsAPII.exchangeRate;
-const HIDDEN_CHAIN_NAMES = new Set(["juno"]);
+const HIDDEN_CHAIN_NAMES = new Set(["juno", "okb"]);
 
 const filterHiddenChains = (cards) =>
   (Array.isArray(cards) ? cards : []).filter(
@@ -68,6 +68,8 @@ const filterHiddenChains = (cards) =>
         String(card?.queryChainName || "").trim().toLowerCase(),
       ),
   );
+
+const DEFAULT_ADDITIONAL_CRYPTOS = filterHiddenChains(initialAdditionalCryptos);
 
 const createLazyBleManagerProxy = (getManager) =>
   new Proxy(
@@ -110,7 +112,7 @@ export const CryptoProvider = ({ children }) => {
   const [currencyUnit, setCurrencyUnit] = useState("USD");
   const [ActivityLog, setActivityLog] = useState([]);
   const [initialAdditionalCryptosState, setInitialAdditionalCryptos] = useState(
-    initialAdditionalCryptos
+    DEFAULT_ADDITIONAL_CRYPTOS
   );
   const [additionalCryptos, setAdditionalCryptos] = useState(
     initialAdditionalCryptosState
@@ -789,7 +791,7 @@ export const CryptoProvider = ({ children }) => {
           const savedMap = new Map(savedList.map((c) => [makeKey(c), c]));
 
           const merged = [];
-          for (const def of initialAdditionalCryptos) {
+          for (const def of DEFAULT_ADDITIONAL_CRYPTOS) {
             const k = makeKey(def);
             if (savedMap.has(k)) {
               merged.push({ ...def, ...savedMap.get(k) });
@@ -804,19 +806,21 @@ export const CryptoProvider = ({ children }) => {
             }
           }
 
-          const normalizedMerged = merged.map((card) =>
-            enrichLtcAddressData(
-              enrichBtcAddressData(
-                enrichBchAddressData(card, card?.bchAddressType),
-                card?.btcAddressType,
+          const normalizedMerged = filterHiddenChains(
+            merged.map((card) =>
+              enrichLtcAddressData(
+                enrichBtcAddressData(
+                  enrichBchAddressData(card, card?.bchAddressType),
+                  card?.btcAddressType,
+                ),
+                card?.ltcAddressType,
               ),
-              card?.ltcAddressType,
             ),
           );
           setInitialAdditionalCryptos(normalizedMerged);
           setAdditionalCryptos(normalizedMerged);
         } else {
-          const normalizedDefaults = initialAdditionalCryptos.map((card) =>
+          const normalizedDefaults = DEFAULT_ADDITIONAL_CRYPTOS.map((card) =>
             enrichLtcAddressData(
               enrichBtcAddressData(
                 enrichBchAddressData(card, card?.bchAddressType),

@@ -97,7 +97,7 @@ const buildPriceFetchFingerprint = (cards) =>
     .sort()
     .join("|");
 
-const HIDDEN_CHAIN_NAMES = new Set(["juno"]);
+const HIDDEN_CHAIN_NAMES = new Set(["juno", "okb"]);
 
 const filterHiddenChains = (cards) =>
   (Array.isArray(cards) ? cards : []).filter(

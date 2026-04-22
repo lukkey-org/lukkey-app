@@ -54,8 +54,8 @@ const networkSearchAliases = {
   ht: "Huobi ECO Chain",
   iotx: "IoTeX Network Mainnet",
   ltc: "Litecoin",
-  okt: "OKX Chain",
-  okx: "OKX Chain",
+  // okt: "OKX Chain", // OKB/OKX Chain support disabled.
+  // okx: "OKX Chain", // OKB/OKX Chain support disabled.
   op: "Optimism",
   matic: "Polygon",
   poly: "Polygon",

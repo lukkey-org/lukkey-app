@@ -28,7 +28,7 @@ export const prefixToShortName = {
   "fantom:": "FTM", // Fantom
   "huobi:": "HTX", // Huobi Token
   "iotex:": "IOTX", // IoTeX
-  "okb:": "OKT", // OKT
+  // "okb:": "OKT", // OKB/OKX Chain support disabled.
   "polygon:": "POL", // Polygon
   "tron:": "TRX", // Tron
   "zksync:": "ZKSYNC", // zkSync Era

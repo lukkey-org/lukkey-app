@@ -6,7 +6,8 @@
 // config/mappingRegistry.js
 
 const evmRaw =
-  "arbitrum,aurora,avalanche,binance,ethereum,ethereum_classic,fantom,gnosis,cronos,iotex,linea,okb,optimism,polygon,zksync,ronin,celo";
+  "arbitrum,aurora,avalanche,binance,ethereum,ethereum_classic,fantom,gnosis,cronos,iotex,linea,optimism,polygon,zksync,ronin,celo";
+// OKB/OKX Chain support disabled: okb removed from evmRaw.
 const btcRaw = "bitcoin,bitcoin_cash,litecoin";
 const tronRaw = "tron";
 const solRaw = "solana";

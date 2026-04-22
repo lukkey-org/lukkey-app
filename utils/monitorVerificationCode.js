@@ -296,7 +296,7 @@ function createMonitorVerificationCode({
       case "FTM":
       case "HTX":
       case "IOTX":
-      case "OKT":
+      // case "OKT": // OKB/OKX Chain support disabled.
       case "POL":
       case "ZKSYNC":
       case "GNO":

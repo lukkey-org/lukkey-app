@@ -20,7 +20,7 @@ export const CHAIN_NAMES = [
   "FTM",
   "HTX",
   "IOTX",
-  "OKT",
+  // "OKT", // OKB/OKX Chain support disabled.
   "POL",
   "TRX",
   "ZKSYNC",

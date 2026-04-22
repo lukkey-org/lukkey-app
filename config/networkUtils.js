@@ -471,9 +471,9 @@ export const detectNetwork = (address, preferredChain = "") => {
     return "Bitcoin (BTC)";
   }
 
-  // Ethereum, Binance Smart Chain, Polygon, Fantom, Arbitrum, Avalanche, Huobi ECO Chain, OKX Chain, Optimism, Gnosis Chain, zkSync Era Mainnet, Linea, Mantle, Ethereum Classic, EthereumPoW, Base, Boba Network, Celo
+  // Ethereum, Binance Smart Chain, Polygon, Fantom, Arbitrum, Avalanche, Huobi ECO Chain, Optimism, Gnosis Chain, zkSync Era Mainnet, Linea, Mantle, Ethereum Classic, EthereumPoW, Base, Boba Network, Celo
   else if (/^0x[a-fA-F0-9]{40}$/.test(normalizedAddress)) {
-    return "Ethereum (ETH)/Binance (BNB)/Polygon (POL)/Fantom (FTM)/Arbitrum (ARB)/Avalanche (AVAX)/Huobi ECO Chain (HECO)/OKX Chain (OKT)/Optimism (OP)/Gnosis Chain (xDAI)/zkSync Era Mainnet (zkSync)/Linea (Linea)/Mantle (Mantle)/Ethereum Classic (ETC)/EthereumPoW (ETHW)/Base (BASE)/Boba Network (BOBA)/Celo (CELO)";
+    return "Ethereum (ETH)/Binance (BNB)/Polygon (POL)/Fantom (FTM)/Arbitrum (ARB)/Avalanche (AVAX)/Huobi ECO Chain (HECO)/Optimism (OP)/Gnosis Chain (xDAI)/zkSync Era Mainnet (zkSync)/Linea (Linea)/Mantle (Mantle)/Ethereum Classic (ETC)/EthereumPoW (ETHW)/Base (BASE)/Boba Network (BOBA)/Celo (CELO)";
   }
 
   // Tron

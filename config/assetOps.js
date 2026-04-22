@@ -36,7 +36,7 @@ const assetOps = {
   gnosis: "m/44'/60'/0'/0/0",
   huobi: "m/44'/60'/0'/0/0",
   iotex: "m/44'/60'/0'/0/0",
-  okb: "m/44'/60'/0'/0/0",
+  // okb: "m/44'/60'/0'/0/0", // OKB/OKX Chain support disabled.
   polygon: "m/44'/60'/0'/0/0",
   zksync: "m/44'/60'/0'/0/0",
   aptos: "m/44'/637'/0'/0'/0'",

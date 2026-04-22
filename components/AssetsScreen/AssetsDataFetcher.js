@@ -75,9 +75,10 @@ const BALANCE_SYMBOL_ALIAS_BY_CHAIN = {
   aurora: {
     aurora: ["eth"],
   },
-  okb: {
-    okt: ["okb"],
-  },
+  // OKB/OKX Chain support disabled.
+  // okb: {
+  //   okt: ["okb"],
+  // },
 };
 
 const normalizeLower = (value) => String(value || "").trim().toLowerCase();
