@@ -34,4 +34,5 @@ export const CHAIN_NAMES = [
   "RON",
   "APT",
   "SUI",
+  "DOGE",
 ];

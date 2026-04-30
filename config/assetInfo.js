@@ -647,6 +647,7 @@ export const initialAdditionalCryptos = [
   {
     name: "Dogecoin",
     shortName: "DOGE",
+    queryChainShortName: "DOGE",
     queryChainName: "dogecoin",
     coin_type: "native",
     fee: "0.0",
