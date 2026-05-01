@@ -218,6 +218,9 @@ export const ko = {
     "Select the network and enter the token contract address": "네트워크를 선택하고 토큰 컨트랙트 주소를 입력하세요",
     "Search Network": "네트워크 검색",
     "Contract Address": "컨트랙트 주소",
+    "Token Not Supported": "지원되지 않는 토큰",
+    "This token type is not supported at this time. Please verify the contract details or contact support for assistance.":
+      "현재 이 토큰 유형은 지원되지 않습니다. 컨트랙트 정보를 확인하거나 지원팀에 문의해 주세요.",
     "Add": "추가",
     "No matching tokens found": "일치하는 토큰을 찾을 수 없습니다",
     "Token not listed?": "토큰이 목록에 없나요?",

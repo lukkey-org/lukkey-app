@@ -20,7 +20,9 @@ import {
   TextInput,
   ScrollView,
   KeyboardAvoidingView,
+  Modal,
   Platform,
+  Pressable,
   StyleSheet,
   Animated,
   TouchableWithoutFeedback,
@@ -31,6 +33,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { VaultScreenStylesRoot } from "../styles/styles";
 import { DeviceContext, DarkModeContext } from "../utils/DeviceContext";
+import { tokenAPI } from "../env/apiEndpoints";
 import { fetchWalletBalance } from "./AssetsScreen/AssetsDataFetcher";
 import { getNetworkImage, networks } from "../config/networkConfig";
 import { resolveGasFeeSymbolForChain } from "../config/gasFeeToken";
@@ -41,6 +44,7 @@ import {
   resolveChainIcon,
 } from "../utils/assetIconResolver";
 import AnimatedWebP from "./common/AnimatedWebP";
+import { BlurView } from "./common/AppBlurView";
 
 let cachedSearchQuery = "";
 let cachedSelectedChain = "All";
@@ -71,6 +75,7 @@ const AddAssetScreen = () => {
   const [searchBoxHeight, setSearchBoxHeight] = useState(0);
   const [networkError, setNetworkError] = useState(false);
   const [contractError, setContractError] = useState(false);
+  const [unsupportedModalVisible, setUnsupportedModalVisible] = useState(false);
   const shakeNetworkAnim = useRef(new Animated.Value(0)).current;
   const shakeContractAnim = useRef(new Animated.Value(0)).current;
   const networkInputRef = useRef(null);
@@ -93,8 +98,6 @@ const AddAssetScreen = () => {
     const title =
       step === "custom"
         ? t("Add Custom Token")
-        : step === "unsupported"
-        ? t("Token Not Supported")
         : t("Search Asset");
     navigation.setOptions({ title });
   }, [navigation, step, t]);
@@ -125,6 +128,21 @@ const AddAssetScreen = () => {
 
   const displayShortName = (shortName) =>
     String(shortName || "").replace(/\.e$/i, "");
+  const normalizeCustomTokenChain = (networkName) => {
+    const normalized = String(networkName || "")
+      .trim()
+      .toLowerCase();
+    const aliases = {
+      "bitcoin cash": "bitcoin_cash",
+      "binance smart chain": "binance",
+      "ethereum classic": "ethereum_classic",
+      "huobi eco chain": "heco",
+      "iotex network mainnet": "iotex",
+      "zksync era mainnet": "zksync",
+      sui: "sui",
+    };
+    return aliases[normalized] || normalized.replace(/\s+/g, "_");
+  };
   const getCryptoCardImage = React.useCallback(
     (crypto) => resolveCardImage(crypto),
     [],
@@ -283,11 +301,60 @@ const AddAssetScreen = () => {
   };
 
   const openNotSupported = () => {
-    setStep("unsupported");
+    setNetworkDropdownVisible(false);
+    setUnsupportedModalVisible(true);
   };
 
   const closeNotSupported = () => {
-    setStep("custom");
+    setUnsupportedModalVisible(false);
+  };
+
+  const handleAddCustomToken = async () => {
+    const normalizedNetwork =
+      getBestNetworkMatch(selectedNetwork) || selectedNetwork;
+    const payload = {
+      chain: normalizeCustomTokenChain(normalizedNetwork),
+      tokenAddress: String(contractAddress || "").trim(),
+    };
+
+    try {
+      if (!tokenAPI?.enabled || !tokenAPI?.addToken) {
+        console.log("[AddCustomToken][SKIP]", {
+          reason: "token API is not configured",
+          body: payload,
+        });
+        return;
+      }
+
+      console.log("[AddCustomToken][REQUEST]", {
+        url: tokenAPI.addToken,
+        method: "POST",
+        body: payload,
+      });
+
+      const response = await fetch(tokenAPI.addToken, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const responseText = await response.text();
+      let responseData = responseText;
+      try {
+        responseData = responseText ? JSON.parse(responseText) : null;
+      } catch {}
+
+      console.log("[AddCustomToken][RESPONSE]", {
+        status: response.status,
+        ok: response.ok,
+        data: responseData,
+      });
+    } catch (error) {
+      console.log("[AddCustomToken][ERROR]", error);
+    }
   };
 
   const filteredNetworks = networks.filter((name) =>
@@ -1022,6 +1089,7 @@ const AddAssetScreen = () => {
                         setContractError(missingContract);
                         return;
                       }
+                      handleAddCustomToken();
                       openNotSupported();
                     }}
                   >
@@ -1042,51 +1110,64 @@ const AddAssetScreen = () => {
         </View>
       )}
 
-      {step === "unsupported" && (
-        <View style={styles.fullHeight}>
-          <View style={styles.flexGrow}>
-            <ScrollView
-              style={styles.scroll}
-              contentContainerStyle={styles.formContent}
-              showsVerticalScrollIndicator={false}
+      <Modal
+        animationType="fade"
+        transparent
+        visible={unsupportedModalVisible}
+        onRequestClose={closeNotSupported}
+      >
+        <View style={styles.modalOverlayRoot}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={closeNotSupported}>
+            <BlurView style={StyleSheet.absoluteFillObject} />
+          </Pressable>
+          <View style={VaultScreenStyle.centeredView} pointerEvents="box-none">
+            <View
+              style={[
+                VaultScreenStyle.modalView,
+                styles.unsupportedModalView,
+              ]}
+              onStartShouldSetResponder={() => true}
             >
-              <Text style={VaultScreenStyle.modalTitle}>
-                {t("Token Not Supported")}
-              </Text>
-              <AnimatedWebP
-                source={require("../assets/animations/Fail.webp")}
-                style={{ width: 120, height: 120, marginTop: 16 }}
-              />
-              <Text
-                style={[
-                  VaultScreenStyle.modalSubtitle,
-                  { marginTop: 10, textAlign: "center" },
-                ]}
-              >
-                {t(
-                  "This token type is not supported at this time. Please verify the contract details or contact support for assistance."
-                )}
-              </Text>
-            </ScrollView>
+              <View style={styles.unsupportedContent}>
+                <AnimatedWebP
+                  source={require("../assets/animations/Fail.webp")}
+                  style={styles.unsupportedIcon}
+                />
+                <Text
+                  style={[
+                    VaultScreenStyle.modalTitle,
+                    styles.unsupportedTitle,
+                  ]}
+                >
+                  {t("Token Not Supported")}
+                </Text>
+                <Text
+                  style={[
+                    VaultScreenStyle.modalSubtitle,
+                    styles.unsupportedMessage,
+                  ]}
+                >
+                  {t(
+                    "This token type is not supported at this time. Please verify the contract details or contact support for assistance."
+                  )}
+                </Text>
+              </View>
 
-            <View style={styles.footerSingle}>
-              <TouchableOpacity
-                style={[
-                  VaultScreenStyle.cancelButton,
-                  {
-                    borderRadius: 16,
-                    height: 60,
-                    width: "100%",
-                  },
-                ]}
-                onPress={closeNotSupported}
-              >
-                <Text style={VaultScreenStyle.cancelButtonText}>{t("OK")}</Text>
-              </TouchableOpacity>
+              <View style={styles.unsupportedFooter}>
+                <TouchableOpacity
+                  style={[
+                    VaultScreenStyle.cancelButton,
+                    styles.unsupportedButton,
+                  ]}
+                  onPress={closeNotSupported}
+                >
+                  <Text style={VaultScreenStyle.cancelButtonText}>{t("OK")}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </View>
-      )}
+      </Modal>
     </LinearGradient>
   );
 };
@@ -1128,6 +1209,43 @@ const styles = StyleSheet.create({
     width: "100%",
     marginTop: 20,
     paddingBottom: 40,
+  },
+  modalOverlayRoot: {
+    flex: 1,
+  },
+  unsupportedModalView: {
+    maxWidth: 380,
+    minHeight: 360,
+    justifyContent: "space-between",
+  },
+  unsupportedContent: {
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  unsupportedIcon: {
+    width: 120,
+    height: 120,
+    marginBottom: 16,
+    alignSelf: "center",
+  },
+  unsupportedTitle: {
+    width: "100%",
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  unsupportedMessage: {
+    width: "100%",
+    textAlign: "center",
+  },
+  unsupportedFooter: {
+    width: "100%",
+    marginTop: 24,
+  },
+  unsupportedButton: {
+    borderRadius: 16,
+    height: 60,
+    width: "100%",
   },
 });
 

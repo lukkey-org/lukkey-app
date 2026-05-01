@@ -219,6 +219,9 @@ export const vi = {
     "Select the network and enter the token contract address": "Chọn mạng và nhập địa chỉ hợp đồng của token",
     "Search Network": "Tìm kiếm mạng",
     "Contract Address": "Địa chỉ hợp đồng",
+    "Token Not Supported": "Token không được hỗ trợ",
+    "This token type is not supported at this time. Please verify the contract details or contact support for assistance.":
+      "Loại token này hiện chưa được hỗ trợ. Vui lòng kiểm tra chi tiết hợp đồng hoặc liên hệ bộ phận hỗ trợ để được trợ giúp.",
     "Add": "Thêm",
     "No matching tokens found": "Không tìm thấy token phù hợp",
     "Token not listed?": "Token không có trong danh sách?",

@@ -219,6 +219,9 @@ export const mn = {
     "Select the network and enter the token contract address": "Сүлжээг сонгоод токены гэрээний хаягийг оруулна уу",
     "Search Network": "Сүлжээ хайх",
     "Contract Address": "Гэрээний хаяг",
+    "Token Not Supported": "Токен дэмжигдэхгүй",
+    "This token type is not supported at this time. Please verify the contract details or contact support for assistance.":
+      "Энэ токены төрөл одоогоор дэмжигдэхгүй байна. Гэрээний мэдээллийг шалгах эсвэл тусламж авахын тулд дэмжлэгтэй холбогдоно уу.",
     "Add": "Нэмэх",
     "No matching tokens found": "Тохирох токен олдсонгүй",
     "Token not listed?": "Токен жагсаалтад байхгүй байна уу?",

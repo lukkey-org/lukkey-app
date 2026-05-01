@@ -218,6 +218,9 @@ export const ru = {
     "Select the network and enter the token contract address": "Выберите сеть и введите адрес контракта токена",
     "Search Network": "Поиск сети",
     "Contract Address": "Адрес контракта",
+    "Token Not Supported": "Токен не поддерживается",
+    "This token type is not supported at this time. Please verify the contract details or contact support for assistance.":
+      "Этот тип токена сейчас не поддерживается. Проверьте данные контракта или обратитесь в службу поддержки.",
     "Add": "Добавить",
     "No matching tokens found": "Подходящих токенов не найдено",
     "Token not listed?": "Токен отсутствует в списке?",

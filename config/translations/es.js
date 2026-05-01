@@ -219,6 +219,9 @@ export const es = {
     "Select the network and enter the token contract address": "Selecciona la red e ingresa la dirección del contrato del token",
     "Search Network": "Buscar red",
     "Contract Address": "Dirección del contrato",
+    "Token Not Supported": "Token no compatible",
+    "This token type is not supported at this time. Please verify the contract details or contact support for assistance.":
+      "Este tipo de token no es compatible en este momento. Verifica los detalles del contrato o contacta con soporte para obtener ayuda.",
     "Add": "Agregar",
     "No matching tokens found": "No se encontraron tokens coincidentes",
     "Token not listed?": "¿El token no está en la lista?",

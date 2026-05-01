@@ -219,6 +219,9 @@ export const tl = {
     "Select the network and enter the token contract address": "Piliin ang network at ilagay ang address ng kontrata ng token",
     "Search Network": "Maghanap ng network",
     "Contract Address": "Address ng kontrata",
+    "Token Not Supported": "Hindi suportado ang token",
+    "This token type is not supported at this time. Please verify the contract details or contact support for assistance.":
+      "Hindi pa suportado ang ganitong uri ng token sa ngayon. Pakisuri ang mga detalye ng kontrata o makipag-ugnayan sa suporta para sa tulong.",
     "Add": "Idagdag",
     "No matching tokens found": "Walang natagpuang tumutugmang token",
     "Token not listed?": "Hindi nakalista ang token?",

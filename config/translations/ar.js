@@ -252,6 +252,9 @@ export const ar = {
       "اختر الشبكة وأدخل عنوان عقد الرمز",
     "Search Network": "بحث عن شبكة",
     "Contract Address": "عنوان العقد",
+    "Token Not Supported": "الرمز غير مدعوم",
+    "This token type is not supported at this time. Please verify the contract details or contact support for assistance.":
+      "نوع الرمز هذا غير مدعوم حاليًا. يرجى التحقق من تفاصيل العقد أو التواصل مع الدعم للحصول على المساعدة.",
     Add: "إضافة",
     "No matching tokens found": "لم يتم العثور على رموز مطابقة",
     "Token not listed?": "غير موجود في القائمة؟",

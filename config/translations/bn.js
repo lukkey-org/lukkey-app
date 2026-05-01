@@ -219,6 +219,9 @@ export const bn = {
     "Select the network and enter the token contract address": "নেটওয়ার্ক নির্বাচন করুন এবং টোকেনের কনট্র্যাক্ট ঠিকানা লিখুন",
     "Search Network": "নেটওয়ার্ক অনুসন্ধান করুন",
     "Contract Address": "কনট্র্যাক্ট ঠিকানা",
+    "Token Not Supported": "টোকেন সমর্থিত নয়",
+    "This token type is not supported at this time. Please verify the contract details or contact support for assistance.":
+      "এই টোকেন ধরনটি বর্তমানে সমর্থিত নয়। অনুগ্রহ করে কন্ট্রাক্টের বিবরণ যাচাই করুন অথবা সহায়তার জন্য সাপোর্টে যোগাযোগ করুন।",
     "Add": "যোগ করুন",
     "No matching tokens found": "মিলযুক্ত টোকেন পাওয়া যায়নি",
     "Token not listed?": "টোকেনটি তালিকাভুক্ত নয়?",

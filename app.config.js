@@ -104,6 +104,7 @@ function loadPrivateRuntimeConfig() {
   );
   const chainHmacObject = extractObjectLiteral(chainAuthText, "CHAIN_HMAC");
   const pushApiObject = extractObjectLiteral(apiEndpointsText, "pushAPI");
+  const tokenApiObject = extractObjectLiteral(apiEndpointsText, "tokenAPI");
   const externalLinksObject = extractObjectLiteral(
     apiEndpointsText,
     "externalLinks",
@@ -119,6 +120,7 @@ function loadPrivateRuntimeConfig() {
   );
 
   const pushOrigin = safeUrlOrigin(pushApiObject?.transactionsWS) || null;
+  const tokenOrigin = safeUrlOrigin(tokenApiObject?.addToken) || null;
   const siteOrigin =
     safeUrlOrigin(externalLinksObject?.aboutPage) ||
     safeUrlOrigin(firmwareApiObject?.lvglList) ||
@@ -135,6 +137,8 @@ function loadPrivateRuntimeConfig() {
     chainOrigin: extractString(chainConfigText, "CHAIN_ORIGIN"),
     pushOrigin,
     pushHost: safeUrlHost(pushApiObject?.transactionsWS),
+    tokenOrigin,
+    tokenHost: safeUrlHost(tokenApiObject?.addToken),
     siteOrigin,
     siteHost:
       safeUrlHost(externalLinksObject?.aboutPage) ||

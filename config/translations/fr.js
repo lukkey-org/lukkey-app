@@ -219,6 +219,9 @@ export const fr = {
     "Select the network and enter the token contract address": "Sélectionnez le réseau et saisissez l'adresse du contrat du jeton",
     "Search Network": "Rechercher un réseau",
     "Contract Address": "Adresse du contrat",
+    "Token Not Supported": "Jeton non pris en charge",
+    "This token type is not supported at this time. Please verify the contract details or contact support for assistance.":
+      "Ce type de jeton n'est pas pris en charge pour le moment. Veuillez vérifier les détails du contrat ou contacter l'assistance.",
     "Add": "Ajouter",
     "No matching tokens found": "Aucun jeton correspondant trouvé",
     "Token not listed?": "Jeton non répertorié ?",

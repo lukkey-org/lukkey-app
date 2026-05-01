@@ -219,6 +219,9 @@ export const th = {
     "Select the network and enter the token contract address": "เลือกเครือข่ายและป้อนที่อยู่สัญญาของโทเค็น",
     "Search Network": "ค้นหาเครือข่าย",
     "Contract Address": "ที่อยู่สัญญา",
+    "Token Not Supported": "ไม่รองรับโทเค็นนี้",
+    "This token type is not supported at this time. Please verify the contract details or contact support for assistance.":
+      "ขณะนี้ยังไม่รองรับโทเค็นประเภทนี้ โปรดตรวจสอบรายละเอียดสัญญา หรือติดต่อฝ่ายสนับสนุนเพื่อขอความช่วยเหลือ",
     "Add": "เพิ่ม",
     "No matching tokens found": "ไม่พบโทเค็นที่ตรงกัน",
     "Token not listed?": "ไม่มีโทเค็นในรายการ?",

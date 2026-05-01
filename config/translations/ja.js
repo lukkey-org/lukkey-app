@@ -219,6 +219,9 @@ export const ja = {
     "Select the network and enter the token contract address": "ネットワークを選択し、トークンのコントラクトアドレスを入力してください",
     "Search Network": "ネットワークを検索",
     "Contract Address": "コントラクトアドレス",
+    "Token Not Supported": "トークンはサポートされていません",
+    "This token type is not supported at this time. Please verify the contract details or contact support for assistance.":
+      "このトークンタイプは現在サポートされていません。コントラクトの詳細を確認するか、サポートにお問い合わせください。",
     "Add": "追加",
     "No matching tokens found": "一致するトークンが見つかりません",
     "Token not listed?": "トークンが見つかりませんか？",

@@ -219,6 +219,9 @@ export const id = {
     "Select the network and enter the token contract address": "Pilih jaringan dan masukkan alamat kontrak token",
     "Search Network": "Cari jaringan",
     "Contract Address": "Alamat kontrak",
+    "Token Not Supported": "Token tidak didukung",
+    "This token type is not supported at this time. Please verify the contract details or contact support for assistance.":
+      "Jenis token ini belum didukung saat ini. Periksa detail kontrak atau hubungi dukungan untuk mendapatkan bantuan.",
     "Add": "Tambahkan",
     "No matching tokens found": "Tidak ditemukan token yang cocok",
     "Token not listed?": "Token tidak terdaftar?",

@@ -220,6 +220,9 @@ export const zhTW = {
     "Select the network and enter the token contract address": "請選擇網路並輸入代幣合約地址",
     "Search Network": "搜尋網路",
     "Contract Address": "合約地址",
+    "Token Not Supported": "不支援此代幣",
+    "This token type is not supported at this time. Please verify the contract details or contact support for assistance.":
+      "目前不支援此代幣類型。請確認合約資訊，或聯絡客服取得協助。",
     "Add": "新增",
     "No matching tokens found": "找不到相符的代幣",
     "Token not listed?": "找不到你的代幣？",

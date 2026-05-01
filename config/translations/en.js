@@ -267,6 +267,9 @@ export const en = {
       "Select the network and enter the token contract address",
     "Search Network": "Search Network",
     "Contract Address": "Contract Address",
+    "Token Not Supported": "Token Not Supported",
+    "This token type is not supported at this time. Please verify the contract details or contact support for assistance.":
+      "This token type is not supported at this time. Please verify the contract details or contact support for assistance.",
     Add: "Add",
 
     // AddAssetScreen (asset list)

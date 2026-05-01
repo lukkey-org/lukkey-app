@@ -14,6 +14,11 @@ const marketOrigin = runtimeConfig.marketOrigin || RUNTIME_GATEWAY.marketOrigin;
 const pushOrigin = runtimeConfig.pushOrigin || RUNTIME_GATEWAY.pushOrigin;
 const siteOrigin = runtimeConfig.siteOrigin || RUNTIME_GATEWAY.siteOrigin;
 const fileOrigin = runtimeConfig.fileOrigin || RUNTIME_GATEWAY.fileOrigin;
+const tokenOrigin =
+  runtimeConfig.tokenOrigin ||
+  process.env.EXPO_PUBLIC_TOKEN_ORIGIN ||
+  process.env.TOKEN_ORIGIN ||
+  "";
 
 const chainEnabled = Boolean(
   runtimeConfig.chainOrigin ||
@@ -41,6 +46,12 @@ const fileEnabled = Boolean(
   runtimeConfig.fileOrigin ||
     runtimeConfig.fileHost ||
     RUNTIME_GATEWAY_FLAGS.fileConfigured,
+);
+const tokenEnabled = Boolean(
+  runtimeConfig.tokenOrigin ||
+    runtimeConfig.tokenHost ||
+    process.env.EXPO_PUBLIC_TOKEN_ORIGIN ||
+    process.env.TOKEN_ORIGIN,
 );
 
 function isUsableRemoteUrl(value) {
@@ -234,6 +245,11 @@ export const chartAPI = {
     getApiPath("chart_indexCandles"),
   ),
   enabled: marketEnabled,
+};
+
+export const tokenAPI = {
+  addToken: joinOrigin(tokenOrigin, getApiPath("token_addToken")),
+  enabled: tokenEnabled,
 };
 
 export const externalLinks = {

@@ -255,6 +255,9 @@ export const zh = {
       "请选择网络并输入代币合约地址",
     "Search Network": "搜索网络",
     "Contract Address": "合约地址",
+    "Token Not Supported": "不支持此代币",
+    "This token type is not supported at this time. Please verify the contract details or contact support for assistance.":
+      "目前不支持此代币类型。请核对合约详情，或联系客服获取帮助。",
     Add: "添加",
 
     // AddAssetScreen (asset list)

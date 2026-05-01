@@ -219,6 +219,9 @@ export const hi = {
     "Select the network and enter the token contract address": "नेटवर्क चुनें और टोकन का कॉन्ट्रैक्ट पता दर्ज करें",
     "Search Network": "नेटवर्क खोजें",
     "Contract Address": "कॉन्ट्रैक्ट पता",
+    "Token Not Supported": "टोकन समर्थित नहीं है",
+    "This token type is not supported at this time. Please verify the contract details or contact support for assistance.":
+      "यह टोकन प्रकार अभी समर्थित नहीं है। कृपया कॉन्ट्रैक्ट विवरण सत्यापित करें या सहायता के लिए सपोर्ट से संपर्क करें।",
     "Add": "जोड़ें",
     "No matching tokens found": "कोई मिलते-जुलते टोकन नहीं मिले",
     "Token not listed?": "टोकन सूची में नहीं है?",

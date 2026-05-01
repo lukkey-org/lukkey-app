@@ -219,6 +219,9 @@ export const uk = {
     "Select the network and enter the token contract address": "Виберіть мережу та введіть адресу контракту токена",
     "Search Network": "Пошук мережі",
     "Contract Address": "Адреса контракту",
+    "Token Not Supported": "Токен не підтримується",
+    "This token type is not supported at this time. Please verify the contract details or contact support for assistance.":
+      "Цей тип токена наразі не підтримується. Перевірте дані контракту або зверніться до служби підтримки.",
     "Add": "Додати",
     "No matching tokens found": "Відповідних токенів не знайдено",
     "Token not listed?": "Токен відсутній у списку?",

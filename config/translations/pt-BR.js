@@ -219,6 +219,9 @@ export const ptBR = {
     "Select the network and enter the token contract address": "Selecione a rede e insira o endereço do contrato do token",
     "Search Network": "Pesquisar rede",
     "Contract Address": "Endereço do contrato",
+    "Token Not Supported": "Token não compatível",
+    "This token type is not supported at this time. Please verify the contract details or contact support for assistance.":
+      "Este tipo de token não é compatível no momento. Verifique os detalhes do contrato ou entre em contato com o suporte para obter ajuda.",
     "Add": "Adicionar",
     "No matching tokens found": "Nenhum token correspondente encontrado",
     "Token not listed?": "Token não listado?",
