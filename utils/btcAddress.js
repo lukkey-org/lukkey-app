@@ -141,6 +141,16 @@ const encodeBase58Check = (payload) => {
   return encodeBase58(Uint8Array.from([...payload, ...checksum]));
 };
 
+const isValidBase58Check = (decodedBytes) => {
+  if (!decodedBytes || decodedBytes.length < 5) return false;
+  const payload = decodedBytes.slice(0, -4);
+  const checksum = decodedBytes.slice(-4);
+  return (
+    bytesToHex(checksum) ===
+    bytesToHex(sha256Bytes(sha256Bytes(payload)).slice(0, 4))
+  );
+};
+
 const convertBits = (data, fromBits, toBits, pad = true) => {
   let accumulator = 0;
   let bitCount = 0;
@@ -195,6 +205,70 @@ const createBech32Checksum = (hrp, data, encoding) => {
   return Array.from({ length: 6 }, (_, index) =>
     (polymod >>> (5 * (5 - index))) & 31,
   );
+};
+
+const decodeBech32 = (address) => {
+  const normalized = normalizeAddressInput(address);
+  if (!normalized) return null;
+  if (
+    normalized !== normalized.toLowerCase() &&
+    normalized !== normalized.toUpperCase()
+  ) {
+    return null;
+  }
+
+  const lowerAddress = normalized.toLowerCase();
+  const separatorIndex = lowerAddress.lastIndexOf("1");
+  if (separatorIndex < 1 || separatorIndex + 7 > lowerAddress.length) return null;
+
+  const hrp = lowerAddress.slice(0, separatorIndex);
+  const dataChars = lowerAddress.slice(separatorIndex + 1);
+  const data = [];
+  for (const char of dataChars) {
+    const value = BECH32_CHARSET.indexOf(char);
+    if (value < 0) return null;
+    data.push(value);
+  }
+
+  const polymod = bech32Polymod([...bech32HrpExpand(hrp), ...data]);
+  let encoding = "";
+  if (polymod === 1) {
+    encoding = "bech32";
+  } else if (polymod === 0x2bc830a3) {
+    encoding = "bech32m";
+  } else {
+    return null;
+  }
+
+  return {
+    hrp,
+    data: data.slice(0, -6),
+    encoding,
+  };
+};
+
+const decodeSegwitAddress = (address, expectedHrp) => {
+  const decoded = decodeBech32(address);
+  if (!decoded || decoded.hrp !== expectedHrp) return null;
+  const [witnessVersion, ...programWords] = decoded.data;
+  if (witnessVersion == null || witnessVersion < 0 || witnessVersion > 16) {
+    return null;
+  }
+
+  const program = convertBits(programWords, 5, 8, false);
+  if (!program || program.length < 2 || program.length > 40) return null;
+  if (witnessVersion === 0) {
+    if (decoded.encoding !== "bech32") return null;
+    if (program.length !== 20 && program.length !== 32) return null;
+  } else if (decoded.encoding !== "bech32m") {
+    return null;
+  }
+
+  return {
+    witnessVersion,
+    program,
+    encoding: decoded.encoding,
+  };
 };
 
 const encodeSegwitAddress = (hrp, witnessVersion, program, encoding = "bech32") => {
@@ -361,6 +435,34 @@ export const normalizeBtcAddressType = (type) => {
   if (normalized === BTC_ADDRESS_TYPES.TAPROOT) return BTC_ADDRESS_TYPES.TAPROOT;
   return BTC_ADDRESS_TYPES.NESTED_SEGWIT;
 };
+
+export const getBtcAddressType = (address) => {
+  const normalized = normalizeAddressInput(address);
+  if (!normalized) return "";
+
+  const decodedBase58 = decodeBase58(normalized);
+  if (
+    decodedBase58 &&
+    decodedBase58.length === 25 &&
+    isValidBase58Check(decodedBase58)
+  ) {
+    const version = decodedBase58[0];
+    if (version === 0x00) return BTC_ADDRESS_TYPES.LEGACY;
+    if (version === 0x05) return BTC_ADDRESS_TYPES.NESTED_SEGWIT;
+  }
+
+  const lowerAddress = normalized.toLowerCase();
+  const hrp = lowerAddress.startsWith("tb1") ? "tb" : "bc";
+  const segwit = decodeSegwitAddress(normalized, hrp);
+  if (!segwit) return "";
+  if (segwit.witnessVersion === 0) return BTC_ADDRESS_TYPES.NATIVE_SEGWIT;
+  if (segwit.witnessVersion === 1 && segwit.program.length === 32) {
+    return BTC_ADDRESS_TYPES.TAPROOT;
+  }
+  return "";
+};
+
+export const isBtcAddress = (address) => !!getBtcAddressType(address);
 
 export const deriveBtcAddressesFromPubkeys = (pubkeysByType = {}) => {
   const out = {

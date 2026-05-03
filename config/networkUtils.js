@@ -4,6 +4,8 @@
  * © Copyright LUKKEY AG
  */
 import CryptoJS from "crypto-js";
+import { isBtcAddress } from "../utils/btcAddress";
+import { isLtcAddress } from "../utils/ltcAddress";
 
 // Bitcoin, Ethereum, Binance Smart Chain, Polygon, Fantom, Arbitrum, Avalanche, Huobi ECO Chain, OKX Chain, Optimism, Gnosis Chain, zkSync Era Mainnet, Linea, Mantle, Ethereum Classic, EthereumPoW, Base, Boba Network, Celo, Tron, Solana, Ripple, SUI, Aptos,Secret Network, Kasp, Kusama, Astar, Litecoin,Manta Atlantic, Manta Pacific Mainnet, Mixin Virtual Machine，Monero (XMR), Near (NEAR), Nervos (CKB), Neurai (XNA), Nexa (NEXA), OctaSpace (OCTA), Cosmos (ATOM)/Cronos (CRO)/Crypto.org (CRO)/DIS CHAIN (DIS)/Juno (JUNO), Dogecoin (DOGE), Dynex (DNX), Fetch.ai (FET), Filecoin (FIL)/Filecoin FEVM (FIL), IoTeX Network Mainnet (IOTX), Joystream (JOY), Conflux (CFX)/Conflux eSpace (CFX), Algorand (ALGO), Akash (AKT), Aurora (AURORA), Bitcoin Cash (BCH), Blast (BLAST), Celestia (TIA)
 const BCH_PREFIXES = ["bitcoincash:", "bitcoin_cash:"];
@@ -466,8 +468,15 @@ export const detectNetwork = (address, preferredChain = "") => {
     return "Bitcoin Cash (BCH)";
   }
 
+  if (
+    (preferred === "ltc" || preferred === "litecoin") &&
+    isLtcAddress(normalizedAddress)
+  ) {
+    return "Litecoin (LTC)";
+  }
+
   // Bitcoin
-  if (/^(1|3|bc1|tb1)[a-zA-HJ-NP-Z0-9]{25,39}$/.test(normalizedAddress)) {
+  if (isBtcAddress(normalizedAddress)) {
     return "Bitcoin (BTC)";
   }
 
@@ -482,7 +491,10 @@ export const detectNetwork = (address, preferredChain = "") => {
   }
 
   // Bitcoin Cash
-  else if (isBchCashAddr(normalizedAddress)) {
+  else if (
+    isBchCashAddr(normalizedAddress) ||
+    isBchLegacyAddress(normalizedAddress)
+  ) {
     return "Bitcoin Cash (BCH)";
   }
 
@@ -512,7 +524,7 @@ export const detectNetwork = (address, preferredChain = "") => {
   }
 
   // Litecoin
-  else if (/^[LM3][a-km-zA-HJ-NP-Z1-9]{26,33}$/.test(normalizedAddress)) {
+  else if (isLtcAddress(normalizedAddress)) {
     return "Litecoin (LTC)";
   }
 
