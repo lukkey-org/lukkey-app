@@ -501,10 +501,16 @@ const AddressBookScreen = () => {
         confirmText={t("Delete")}
         containerStyle={styles.modalView}
         subtitleStyle={{ marginBottom: 20 }}
-        cancelButtonStyle={styles.cancelButton}
-        confirmButtonStyle={styles.confirmButton}
+        cancelButtonStyle={[
+          styles.cancelButton,
+          { flex: 1, marginRight: 4, borderRadius: 15 },
+        ]}
+        confirmButtonStyle={[
+          styles.confirmButton,
+          { flex: 1, marginLeft: 4, borderRadius: 15, marginBottom: 0 },
+        ]}
         cancelTextStyle={styles.cancelButtonText}
-        confirmTextStyle={styles.addrBtnText}
+        confirmTextStyle={styles.buttonTextWhite}
       />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
