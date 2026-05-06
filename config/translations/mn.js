@@ -286,5 +286,7 @@ export const mn = {
     "Transaction canceled": "Гүйлгээ цуцлагдлаа",
     "Invalid signature returned by device.": "Төхөөрөмж буруу гарын үсэг буцаалаа.",
     "Signed. Broadcasting transaction...": "Гарын үсэг зурсан. Гүйлгээг сүлжээнд түгээж байна...",
+    "Other balances": "Бусад үлдэгдэл",
+
   },
 };

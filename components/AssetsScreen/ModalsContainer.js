@@ -25,17 +25,31 @@ const ModalsContainer = ({
   bchAddressType,
   bchCashAddr,
   bchLegacyAddr,
+  bchAddressBalances,
+  bchCashaddrBalance,
+  bchLegacyBalance,
   onSwitchBchAddressType,
   btcAddressType,
   btcLegacyAddr,
   btcNestedSegwitAddr,
   btcNativeSegwitAddr,
   btcTaprootAddr,
+  btcAddressBalances,
+  btcLegacyBalance,
+  btcNestedSegwitBalance,
+  btcNativeSegwitBalance,
+  btcTaprootBalance,
+  getConvertedBalance,
+  currencyUnit,
   onSwitchBtcAddressType,
   ltcAddressType,
   ltcLegacyAddr,
   ltcNestedSegwitAddr,
   ltcNativeSegwitAddr,
+  ltcAddressBalances,
+  ltcLegacyBalance,
+  ltcNestedSegwitBalance,
+  ltcNativeSegwitBalance,
   onSwitchLtcAddressType,
   hasVerifyAddressAttempted,
   isPreparingVerifyAddress,
@@ -143,17 +157,31 @@ const ModalsContainer = ({
         bchAddressType={bchAddressType}
         bchCashAddr={bchCashAddr}
         bchLegacyAddr={bchLegacyAddr}
+        bchAddressBalances={bchAddressBalances}
+        bchCashaddrBalance={bchCashaddrBalance}
+        bchLegacyBalance={bchLegacyBalance}
         onSwitchBchAddressType={onSwitchBchAddressType}
         btcAddressType={btcAddressType}
         btcLegacyAddr={btcLegacyAddr}
         btcNestedSegwitAddr={btcNestedSegwitAddr}
         btcNativeSegwitAddr={btcNativeSegwitAddr}
         btcTaprootAddr={btcTaprootAddr}
+        btcAddressBalances={btcAddressBalances}
+        btcLegacyBalance={btcLegacyBalance}
+        btcNestedSegwitBalance={btcNestedSegwitBalance}
+        btcNativeSegwitBalance={btcNativeSegwitBalance}
+        btcTaprootBalance={btcTaprootBalance}
+        getConvertedBalance={getConvertedBalance}
+        currencyUnit={currencyUnit}
         onSwitchBtcAddressType={onSwitchBtcAddressType}
         ltcAddressType={ltcAddressType}
         ltcLegacyAddr={ltcLegacyAddr}
         ltcNestedSegwitAddr={ltcNestedSegwitAddr}
         ltcNativeSegwitAddr={ltcNativeSegwitAddr}
+        ltcAddressBalances={ltcAddressBalances}
+        ltcLegacyBalance={ltcLegacyBalance}
+        ltcNestedSegwitBalance={ltcNestedSegwitBalance}
+        ltcNativeSegwitBalance={ltcNativeSegwitBalance}
         onSwitchLtcAddressType={onSwitchLtcAddressType}
         hasVerifyAddressAttempted={hasVerifyAddressAttempted}
         isPreparingVerifyAddress={isPreparingVerifyAddress}

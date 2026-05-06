@@ -12,6 +12,12 @@ export const LTC_ADDRESS_TYPES = {
   NATIVE_SEGWIT: "native_segwit",
 };
 
+const LTC_BALANCE_FIELD_BY_TYPE = {
+  [LTC_ADDRESS_TYPES.LEGACY]: "ltcLegacyBalance",
+  [LTC_ADDRESS_TYPES.NESTED_SEGWIT]: "ltcNestedSegwitBalance",
+  [LTC_ADDRESS_TYPES.NATIVE_SEGWIT]: "ltcNativeSegwitBalance",
+};
+
 const LTC_CHAIN_NAMES = new Set(["ltc", "litecoin"]);
 const BASE58_ALPHABET =
   "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
@@ -416,7 +422,11 @@ export const enrichLtcAddressData = (
     ltcNativeSegwitAddr,
   );
 
-  return {
+  const typedBalance =
+    card?.ltcAddressBalances?.[nextType] ??
+    card?.[LTC_BALANCE_FIELD_BY_TYPE[nextType]];
+
+  const nextCard = {
     ...card,
     ltcAddressType: nextType,
     ltcLegacyAddr,
@@ -424,6 +434,16 @@ export const enrichLtcAddressData = (
     ltcNativeSegwitAddr,
     address,
   };
+  if (typedBalance !== undefined && typedBalance !== null) {
+    const nextBalance = String(typedBalance);
+    nextCard.balance = nextBalance;
+    const priceUsd = Number(card?.priceUsd ?? 0);
+    const balanceNumber = Number(nextBalance);
+    if (Number.isFinite(priceUsd) && priceUsd > 0 && Number.isFinite(balanceNumber)) {
+      nextCard.EstimatedValue = (balanceNumber * priceUsd).toFixed(2);
+    }
+  }
+  return nextCard;
 };
 
 export const switchLtcAddressTypeForCard = (card, nextType) =>

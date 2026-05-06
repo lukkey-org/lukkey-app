@@ -15,6 +15,7 @@ import {
 } from "./bleSubscription";
 import { bleCmd, frameBle, parseResp } from "./bleProtocol";
 import { ensureScreenUnlocked } from "./ensureScreenUnlocked";
+import { resolveTransportAddrFormat } from "./addressTransportFormat";
 
 const LOG_GREEN = "\x1b[32m";
 const LOG_RED = "\x1b[31m";
@@ -262,11 +263,21 @@ export const handleSendDigital = async ({
  
     }
 
-    const firstTradeMsg = bleCmd.destAddr(paymentAddress, recipientAddress, transactionFeeSelected, chainKey, storedAccountId) + "\r\n";
+    const destAddrFormat = resolveTransportAddrFormat(chainKey, paymentAddress);
+    const firstTradeMsg =
+      bleCmd.destAddr(
+        paymentAddress,
+        recipientAddress,
+        transactionFeeSelected,
+        chainKey,
+        storedAccountId,
+        destAddrFormat
+      ) + "\r\n";
     const firstTradeBase64 = Buffer.from(firstTradeMsg, "utf-8").toString("base64");
     logFlowStep("2/7", "DEST_ADDR send", "wait for device signature gate", {
       assetType: "NFT",
       chainKey,
+      addrFormat: destAddrFormat,
       feePreference,
       transactionFeeSelected,
       storedAccountId,

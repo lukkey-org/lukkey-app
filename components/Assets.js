@@ -178,6 +178,34 @@ function VaultScreen({ route, navigation }) {
   const [priceChanges, setPriceChanges] = useState({});
   const scrollViewRef = useRef();
   const blueToothColor = isDarkMode ? "#CCB68C" : "#CFAB95";
+
+  useEffect(() => {
+    if (!selectedCrypto || !Array.isArray(cryptoCards)) return;
+    const selectedKey = [
+      selectedCrypto?.queryChainName,
+      selectedCrypto?.shortName,
+      selectedCrypto?.name,
+      selectedCrypto?.contractAddress || selectedCrypto?.tokenContractAddress,
+    ]
+      .map((value) => String(value || "").trim().toLowerCase())
+      .join("__");
+    const nextSelected = cryptoCards.find((card) => {
+      const cardKey = [
+        card?.queryChainName,
+        card?.shortName,
+        card?.name,
+        card?.contractAddress || card?.tokenContractAddress,
+      ]
+        .map((value) => String(value || "").trim().toLowerCase())
+        .join("__");
+      return cardKey === selectedKey;
+    });
+    if (!nextSelected || nextSelected === selectedCrypto) return;
+    setSelectedCrypto(nextSelected);
+    if (addressModalVisible && String(nextSelected?.address || "").trim()) {
+      setSelectedAddress(String(nextSelected.address).trim());
+    }
+  }, [addressModalVisible, cryptoCards, selectedCrypto]);
   const iconColor = isDarkMode ? "#ffffff" : "#676776";
   const buttonBackgroundColor = isDarkMode ? "#CCB68C" : "#CFAB95";
   const disabledButtonBackgroundColor = isDarkMode ? "#6c6c6c" : "#ccc";
@@ -2518,17 +2546,31 @@ function VaultScreen({ route, navigation }) {
         bchAddressType={selectedCrypto?.bchAddressType}
         bchCashAddr={selectedCrypto?.bchCashAddr}
         bchLegacyAddr={selectedCrypto?.bchLegacyAddr}
+        bchAddressBalances={selectedCrypto?.bchAddressBalances}
+        bchCashaddrBalance={selectedCrypto?.bchCashaddrBalance}
+        bchLegacyBalance={selectedCrypto?.bchLegacyBalance}
         onSwitchBchAddressType={handleSwitchBchAddressType}
         btcAddressType={selectedCrypto?.btcAddressType}
         btcLegacyAddr={selectedCrypto?.btcLegacyAddr}
         btcNestedSegwitAddr={selectedCrypto?.btcNestedSegwitAddr}
         btcNativeSegwitAddr={selectedCrypto?.btcNativeSegwitAddr}
         btcTaprootAddr={selectedCrypto?.btcTaprootAddr}
+        btcAddressBalances={selectedCrypto?.btcAddressBalances}
+        btcLegacyBalance={selectedCrypto?.btcLegacyBalance}
+        btcNestedSegwitBalance={selectedCrypto?.btcNestedSegwitBalance}
+        btcNativeSegwitBalance={selectedCrypto?.btcNativeSegwitBalance}
+        btcTaprootBalance={selectedCrypto?.btcTaprootBalance}
+        getConvertedBalance={getConvertedBalance}
+        currencyUnit={currencyUnit}
         onSwitchBtcAddressType={handleSwitchBtcAddressType}
         ltcAddressType={selectedCrypto?.ltcAddressType}
         ltcLegacyAddr={selectedCrypto?.ltcLegacyAddr}
         ltcNestedSegwitAddr={selectedCrypto?.ltcNestedSegwitAddr}
         ltcNativeSegwitAddr={selectedCrypto?.ltcNativeSegwitAddr}
+        ltcAddressBalances={selectedCrypto?.ltcAddressBalances}
+        ltcLegacyBalance={selectedCrypto?.ltcLegacyBalance}
+        ltcNestedSegwitBalance={selectedCrypto?.ltcNestedSegwitBalance}
+        ltcNativeSegwitBalance={selectedCrypto?.ltcNativeSegwitBalance}
         onSwitchLtcAddressType={handleSwitchLtcAddressType}
         hasVerifyAddressAttempted={hasVerifyAddressAttempted}
         isPreparingVerifyAddress={isPreparingVerifyAddress}

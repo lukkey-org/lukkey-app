@@ -11,6 +11,22 @@ import { getPubkeyStorageId, getStoredPubkey } from "./pubkeyStorage";
 
 const SYNC_VERBOSE_TRANSPORT = false;
 
+const resolveAddressRequestFormat = (chainName) => {
+  const normalized = String(chainName || "").trim().toLowerCase();
+  if (normalized === "bitcoin") return "nested_segwit";
+  if (normalized === "bitcoin_cash") {
+    return "cashaddr";
+  }
+  if (normalized === "litecoin") return "nested_segwit";
+  return "";
+};
+
+const normalizeAddressRequestChainName = (chainName) => {
+  const normalized = String(chainName || "").trim().toLowerCase();
+  if (normalized === "bitcoincash") return "bitcoin_cash";
+  return normalized;
+};
+
 /**
   * Factory function generates handlePinSubmit, and all dependencies are injected through parameters.
   * @param {Object} deps - dependencies
@@ -265,10 +281,18 @@ export function createHandlePinSubmit({
         setVerificationStatus("waiting");
 
         // 1. Issue all address:<chainName> commands in batches
+        const sentAddressRequests = new Set();
         for (const prefix of Object.keys(prefixToShortName)) {
-          const chainName = prefix.replace(":", "");
+          const chainName = normalizeAddressRequestChainName(
+            prefix.replace(":", "")
+          );
           const shortName = prefixToShortName[prefix];
-          const getMessage = bleCmd.address(chainName) + "\r\n";
+          const requestKey = `${shortName}:${chainName}`;
+          if (sentAddressRequests.has(requestKey)) continue;
+          sentAddressRequests.add(requestKey);
+          const getMessage =
+            bleCmd.address(chainName, resolveAddressRequestFormat(chainName)) +
+            "\r\n";
           const bufferGetMessage = Buffer.from(getMessage, "utf-8");
           const base64GetMessage = bufferGetMessage.toString("base64");
           try {
@@ -329,8 +353,14 @@ export function createHandlePinSubmit({
               );
               if (prefixEntry) {
                 const prefix = prefixEntry[0];
-                const chainName = prefix.replace(":", "");
-                const getMessage = bleCmd.address(chainName) + "\r\n";
+                const chainName = normalizeAddressRequestChainName(
+                  prefix.replace(":", "")
+                );
+                const getMessage =
+                  bleCmd.address(
+                    chainName,
+                    resolveAddressRequestFormat(chainName)
+                  ) + "\r\n";
                 const bufferGetMessage = Buffer.from(getMessage, "utf-8");
                 const base64GetMessage = bufferGetMessage.toString("base64");
                 try {

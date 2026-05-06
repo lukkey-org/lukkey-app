@@ -286,5 +286,7 @@ export const tl = {
     "Transaction canceled": "Kinansela ang transaction",
     "Invalid signature returned by device.": "Nagbalik ang device ng hindi wastong lagda.",
     "Signed. Broadcasting transaction...": "Nalagdaan na. Ibinobrodkast ang transaction...",
+    "Other balances": "Iba pang balanse",
+
   },
 };

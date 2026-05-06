@@ -286,5 +286,7 @@ export const id = {
     "Transaction canceled": "Transaksi dibatalkan",
     "Invalid signature returned by device.": "Perangkat mengembalikan tanda tangan yang tidak valid.",
     "Signed. Broadcasting transaction...": "Ditandatangani. Menyiarkan transaksi...",
+    "Other balances": "Saldo lain",
+
   },
 };

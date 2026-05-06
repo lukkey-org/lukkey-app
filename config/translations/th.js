@@ -286,5 +286,7 @@ export const th = {
     "Transaction canceled": "ยกเลิกธุรกรรมแล้ว",
     "Invalid signature returned by device.": "อุปกรณ์ส่งลายเซ็นที่ไม่ถูกต้องกลับมา",
     "Signed. Broadcasting transaction...": "ลงนามแล้ว กำลังกระจายธุรกรรม...",
+    "Other balances": "มียอดอื่น",
+
   },
 };

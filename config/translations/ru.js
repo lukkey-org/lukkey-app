@@ -285,5 +285,7 @@ export const ru = {
     "Transaction canceled": "Транзакция отменена",
     "Invalid signature returned by device.": "Устройство вернуло недействительную подпись.",
     "Signed. Broadcasting transaction...": "Подписано. Транзакция отправляется в сеть...",
+    "Other balances": "Есть другие балансы",
+
   },
 };

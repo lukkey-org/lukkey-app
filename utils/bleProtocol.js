@@ -14,8 +14,13 @@ export const bleCmd = {
       addr_format: String(addrFormat || ""),
       ...(accountId ? { accountId } : {}),
     }),
-  address: (chain) => JSON.stringify({ cmd: "address", chain }),
-  destAddr: (sender, receiver, fee, chain, accountId) =>
+  address: (chain, addrFormat = "") =>
+    JSON.stringify({
+      cmd: "address",
+      chain,
+      addr_format: String(addrFormat || ""),
+    }),
+  destAddr: (sender, receiver, fee, chain, accountId, addrFormat = "") =>
     JSON.stringify({
       cmd: "destAddr",
       ...(accountId ? { accountId } : {}),
@@ -23,6 +28,7 @@ export const bleCmd = {
       receiver,
       fee,
       chain,
+      addr_format: String(addrFormat || ""),
     }),
   pubkey: (chain, path) => JSON.stringify({ cmd: "pubkey", chain, path }),
   accountId: (id) => JSON.stringify({ cmd: "accountId", id }),

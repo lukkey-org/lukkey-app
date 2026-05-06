@@ -68,8 +68,9 @@ const filterHiddenChains = (cards) =>
         String(card?.queryChainName || "").trim().toLowerCase(),
       ),
   );
-
-const DEFAULT_ADDITIONAL_CRYPTOS = filterHiddenChains(initialAdditionalCryptos);
+const supportedCurrencyUnits = new Set(
+  currencies.map((currency) => currency.shortName),
+);
 
 const createLazyBleManagerProxy = (getManager) =>
   new Proxy(
@@ -112,7 +113,7 @@ export const CryptoProvider = ({ children }) => {
   const [currencyUnit, setCurrencyUnit] = useState("USD");
   const [ActivityLog, setActivityLog] = useState([]);
   const [initialAdditionalCryptosState, setInitialAdditionalCryptos] = useState(
-    DEFAULT_ADDITIONAL_CRYPTOS
+    initialAdditionalCryptos
   );
   const [additionalCryptos, setAdditionalCryptos] = useState(
     initialAdditionalCryptosState
@@ -536,12 +537,27 @@ export const CryptoProvider = ({ children }) => {
       const data = await response.json();
 
       if (data.code === 0 && data.data) {
+        const sortedRawRates = Object.keys(data.data)
+          .sort()
+          .reduce((acc, currency) => {
+            acc[currency] = data.data[currency];
+            return acc;
+          }, {});
+        console.log("[TEMP][exchangeRates] raw fiat rates:", sortedRawRates);
         const flattenedData = {};
         for (const [currency, rateArray] of Object.entries(data.data)) {
           if (Array.isArray(rateArray) && rateArray.length > 0) {
             flattenedData[currency] = rateArray[0];
           }
         }
+        const sortedRates = Object.keys(flattenedData)
+          .sort()
+          .reduce((acc, currency) => {
+            acc[currency] = flattenedData[currency];
+            return acc;
+          }, {});
+        console.log("[TEMP][exchangeRates] fetched fiat rates:", sortedRates);
+        console.log("[TEMP][exchangeRates] BHD:", flattenedData.BHD);
         setConvertRates((prev) => {
           const next = { ...prev, ...flattenedData };
           AsyncStorage.setItem("exchangeRates", JSON.stringify(next)).catch(
@@ -693,7 +709,11 @@ export const CryptoProvider = ({ children }) => {
         if (darkModeValue !== null) setIsDarkMode(JSON.parse(darkModeValue));
 
         const currencyValue = await AsyncStorage.getItem("currencyUnit");
-        if (currencyValue !== null) setCurrencyUnit(currencyValue);
+        if (currencyValue !== null) {
+          setCurrencyUnit(
+            supportedCurrencyUnits.has(currencyValue) ? currencyValue : "USD",
+          );
+        }
 
         const languageValue = await AsyncStorage.getItem("language");
         if (languageValue !== null) i18n.changeLanguage(languageValue);
@@ -791,7 +811,7 @@ export const CryptoProvider = ({ children }) => {
           const savedMap = new Map(savedList.map((c) => [makeKey(c), c]));
 
           const merged = [];
-          for (const def of DEFAULT_ADDITIONAL_CRYPTOS) {
+          for (const def of initialAdditionalCryptos) {
             const k = makeKey(def);
             if (savedMap.has(k)) {
               merged.push({ ...def, ...savedMap.get(k) });
@@ -806,21 +826,19 @@ export const CryptoProvider = ({ children }) => {
             }
           }
 
-          const normalizedMerged = filterHiddenChains(
-            merged.map((card) =>
-              enrichLtcAddressData(
-                enrichBtcAddressData(
-                  enrichBchAddressData(card, card?.bchAddressType),
-                  card?.btcAddressType,
-                ),
-                card?.ltcAddressType,
+          const normalizedMerged = merged.map((card) =>
+            enrichLtcAddressData(
+              enrichBtcAddressData(
+                enrichBchAddressData(card, card?.bchAddressType),
+                card?.btcAddressType,
               ),
+              card?.ltcAddressType,
             ),
           );
           setInitialAdditionalCryptos(normalizedMerged);
           setAdditionalCryptos(normalizedMerged);
         } else {
-          const normalizedDefaults = DEFAULT_ADDITIONAL_CRYPTOS.map((card) =>
+          const normalizedDefaults = initialAdditionalCryptos.map((card) =>
             enrichLtcAddressData(
               enrichBtcAddressData(
                 enrichBchAddressData(card, card?.bchAddressType),

@@ -316,5 +316,7 @@ export const zh = {
     "Transaction canceled": "交易已取消",
     "Invalid signature returned by device.": "设备返回了无效签名。",
     "Signed. Broadcasting transaction...": "已签名，正在广播交易...",
+    "Other balances": "其他有余额",
+
   },
 };

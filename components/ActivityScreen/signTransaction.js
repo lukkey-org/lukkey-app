@@ -16,10 +16,11 @@ import { safeRemoveSubscription } from "../../utils/bleSubscription";
 import { canonicalizeAddressForTransport } from "../../config/networkUtils";
 import { bleCmd, frameBle } from "../../utils/bleProtocol";
 import { ensureScreenUnlocked } from "../../utils/ensureScreenUnlocked";
+import { resolveTransportAddrFormat } from "../../utils/addressTransportFormat";
 
 const LOG_GREEN = "\x1b[32m";
 const LOG_RESET = "\x1b[0m";
-const SUI_MAINNET_RPC = "https://fullnode.mainnet.sui.io:443";
+const SUI_MAINNET_RPC = process.env.EXPO_PUBLIC_SUI_MAINNET_RPC || "";
 const SUI_GAS_COIN_TYPE_RE = /^0x0*2::coin::coin<0x0*2::sui::sui>$/;
 const logFlowStart = (title, meta) => {
   const line = "=".repeat(64);
@@ -89,6 +90,7 @@ const inspectSuiObjects = async (objects) => {
     ? objects.filter((o) => o?.objectId)
     : [];
   if (!candidates.length) return [];
+  if (!SUI_MAINNET_RPC) return candidates;
 
   try {
     const rpcPayload = {
@@ -260,10 +262,20 @@ const signTransaction = async (
       throw screenErr;
     }
 
-    const firstTradeMsg = bleCmd.destAddr(senderAddress, receiveAddress, amount, chainKey, storedAccountId) + "\r\n";
+    const destAddrFormat = resolveTransportAddrFormat(chainKey, senderAddress);
+    const firstTradeMsg =
+      bleCmd.destAddr(
+        senderAddress,
+        receiveAddress,
+        amount,
+        chainKey,
+        storedAccountId,
+        destAddrFormat
+      ) + "\r\n";
     logFlowStep("2/7", "DEVICE_CONFIRM", "", {
       chain: chainKey,
       amount: String(amount),
+      addrFormat: destAddrFormat,
     });
     console.log("Transaction amount:", amount);
     console.log("Send the transaction summary to the device:", firstTradeMsg);

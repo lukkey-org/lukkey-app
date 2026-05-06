@@ -285,5 +285,7 @@ export const ko = {
     "Transaction canceled": "거래가 취소되었습니다",
     "Invalid signature returned by device.": "기기에서 잘못된 서명이 반환되었습니다.",
     "Signed. Broadcasting transaction...": "서명 완료. 거래를 브로드캐스트하는 중...",
+    "Other balances": "다른 잔액 있음",
+
   },
 };

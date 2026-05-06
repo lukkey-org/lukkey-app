@@ -8,17 +8,30 @@ import { accountAPI, metricsAPII } from "../../env/apiEndpoints";
 import { RUNTIME_DEV } from "../../utils/runtimeFlags";
 import { resolveMarketSymbol } from "../../config/priceSymbolAlias";
 import {
+  BCH_ADDRESS_TYPES,
   buildChainAddrEntry,
   normalizeAddressForComparison,
+  normalizeBchAddressType,
 } from "../../config/networkUtils";
 import {
+  getBchAddressType,
   getBchQueryAddressesFromCard,
   isBchCard,
 } from "../../utils/bchAddress";
 import {
+  BTC_ADDRESS_TYPES,
+  getBtcAddressType,
   getBtcQueryAddressesFromCard,
   isBtcCard,
+  normalizeBtcAddressType,
 } from "../../utils/btcAddress";
+import {
+  getLtcAddressType,
+  getLtcQueryAddressesFromCard,
+  isLtcCard,
+  LTC_ADDRESS_TYPES,
+  normalizeLtcAddressType,
+} from "../../utils/ltcAddress";
 
 let balanceRequestSeq = 0;
 let inflightBalancePromise = null;
@@ -75,7 +88,7 @@ const BALANCE_SYMBOL_ALIAS_BY_CHAIN = {
   aurora: {
     aurora: ["eth"],
   },
-  // OKB/OKX Chain support disabled.
+  // OKB is no longer supported.
   // okb: {
   //   okt: ["okb"],
   // },
@@ -89,6 +102,7 @@ const normalizeAddressKey = (value, chainName = "") =>
 const getCardQueryAddresses = (card) => {
   if (isBchCard(card)) return getBchQueryAddressesFromCard(card);
   if (isBtcCard(card)) return getBtcQueryAddressesFromCard(card);
+  if (isLtcCard(card)) return getLtcQueryAddressesFromCard(card);
   const address = String(card?.address || "").trim();
   return address ? [address] : [];
 };
@@ -174,6 +188,162 @@ const normalizeBalanceAmount = (asset) => {
 const parseNumericAmount = (value) => {
   const num = Number(value);
   return Number.isFinite(num) ? num : 0;
+};
+
+const BTC_BALANCE_FIELD_BY_TYPE = {
+  [BTC_ADDRESS_TYPES.LEGACY]: "btcLegacyBalance",
+  [BTC_ADDRESS_TYPES.NESTED_SEGWIT]: "btcNestedSegwitBalance",
+  [BTC_ADDRESS_TYPES.NATIVE_SEGWIT]: "btcNativeSegwitBalance",
+  [BTC_ADDRESS_TYPES.TAPROOT]: "btcTaprootBalance",
+};
+
+const BCH_BALANCE_FIELD_BY_TYPE = {
+  [BCH_ADDRESS_TYPES.CASHADDR]: "bchCashaddrBalance",
+  [BCH_ADDRESS_TYPES.LEGACY]: "bchLegacyBalance",
+};
+
+const LTC_BALANCE_FIELD_BY_TYPE = {
+  [LTC_ADDRESS_TYPES.LEGACY]: "ltcLegacyBalance",
+  [LTC_ADDRESS_TYPES.NESTED_SEGWIT]: "ltcNestedSegwitBalance",
+  [LTC_ADDRESS_TYPES.NATIVE_SEGWIT]: "ltcNativeSegwitBalance",
+};
+
+const EMPTY_BTC_ADDRESS_BALANCES = {
+  [BTC_ADDRESS_TYPES.LEGACY]: "0",
+  [BTC_ADDRESS_TYPES.NESTED_SEGWIT]: "0",
+  [BTC_ADDRESS_TYPES.NATIVE_SEGWIT]: "0",
+  [BTC_ADDRESS_TYPES.TAPROOT]: "0",
+};
+
+const EMPTY_BCH_ADDRESS_BALANCES = {
+  [BCH_ADDRESS_TYPES.CASHADDR]: "0",
+  [BCH_ADDRESS_TYPES.LEGACY]: "0",
+};
+
+const EMPTY_LTC_ADDRESS_BALANCES = {
+  [LTC_ADDRESS_TYPES.LEGACY]: "0",
+  [LTC_ADDRESS_TYPES.NESTED_SEGWIT]: "0",
+  [LTC_ADDRESS_TYPES.NATIVE_SEGWIT]: "0",
+};
+
+const resolveBtcAccountAddressType = (account) => {
+  const fromApi = normalizeLower(account?.addressType);
+  if (BTC_BALANCE_FIELD_BY_TYPE[fromApi]) return fromApi;
+  return getBtcAddressType(account?.address);
+};
+
+const resolveBchAccountAddressType = (account) => {
+  const fromApi = normalizeLower(account?.addressType);
+  if (BCH_BALANCE_FIELD_BY_TYPE[fromApi]) return fromApi;
+  return getBchAddressType(account?.address);
+};
+
+const resolveLtcAccountAddressType = (account) => {
+  const fromApi = normalizeLower(account?.addressType);
+  if (LTC_BALANCE_FIELD_BY_TYPE[fromApi]) return fromApi;
+  return getLtcAddressType(account?.address);
+};
+
+const buildTypedAddressBalanceFields = ({
+  card,
+  accounts,
+  chainName,
+  emptyBalances,
+  fieldByType,
+  resolveAddressType,
+  balancesFieldName,
+  totalFieldName,
+}) => {
+  const nextBalances = { ...emptyBalances };
+  const queryAddressSet = new Set(
+    getCardQueryAddresses(card).map((address) =>
+      normalizeAddressKey(address, chainName),
+    ),
+  );
+
+  for (const account of Array.isArray(accounts) ? accounts : []) {
+    const addressKey = normalizeAddressKey(account?.address, chainName);
+    if (!queryAddressSet.has(addressKey)) continue;
+    const addressType = resolveAddressType(account);
+    if (!fieldByType[addressType]) continue;
+    const asset = findMatchedAsset(card, account?.assets);
+    if (!asset) continue;
+    nextBalances[addressType] = normalizeBalanceAmount(asset);
+  }
+
+  const totalBalance = Object.values(nextBalances).reduce(
+    (sum, value) => sum + parseNumericAmount(value),
+    0,
+  );
+
+  return Object.entries(fieldByType).reduce(
+    (acc, [addressType, fieldName]) => {
+      acc[fieldName] = nextBalances[addressType];
+      return acc;
+    },
+    {
+      [balancesFieldName]: nextBalances,
+      [totalFieldName]: totalBalance.toString(),
+    },
+  );
+};
+
+const buildBtcAddressBalanceFields = (card, accounts) =>
+  buildTypedAddressBalanceFields({
+    card,
+    accounts,
+    chainName: "bitcoin",
+    emptyBalances: EMPTY_BTC_ADDRESS_BALANCES,
+    fieldByType: BTC_BALANCE_FIELD_BY_TYPE,
+    resolveAddressType: resolveBtcAccountAddressType,
+    balancesFieldName: "btcAddressBalances",
+    totalFieldName: "btcTotalBalance",
+  });
+
+const buildBchAddressBalanceFields = (card, accounts) =>
+  buildTypedAddressBalanceFields({
+    card,
+    accounts,
+    chainName: "bitcoin_cash",
+    emptyBalances: EMPTY_BCH_ADDRESS_BALANCES,
+    fieldByType: BCH_BALANCE_FIELD_BY_TYPE,
+    resolveAddressType: resolveBchAccountAddressType,
+    balancesFieldName: "bchAddressBalances",
+    totalFieldName: "bchTotalBalance",
+  });
+
+const buildLtcAddressBalanceFields = (card, accounts) =>
+  buildTypedAddressBalanceFields({
+    card,
+    accounts,
+    chainName: "litecoin",
+    emptyBalances: EMPTY_LTC_ADDRESS_BALANCES,
+    fieldByType: LTC_BALANCE_FIELD_BY_TYPE,
+    resolveAddressType: resolveLtcAccountAddressType,
+    balancesFieldName: "ltcAddressBalances",
+    totalFieldName: "ltcTotalBalance",
+  });
+
+const getTypedBalanceFieldsForCard = (card, accounts) => {
+  if (!isLikelyNativeCard(card)) return null;
+  if (isBtcCard(card)) return buildBtcAddressBalanceFields(card, accounts);
+  if (isBchCard(card)) return buildBchAddressBalanceFields(card, accounts);
+  if (isLtcCard(card)) return buildLtcAddressBalanceFields(card, accounts);
+  return null;
+};
+
+const getActiveAddressTypeForCard = (card) => {
+  if (isBtcCard(card)) return normalizeBtcAddressType(card?.btcAddressType);
+  if (isBchCard(card)) return normalizeBchAddressType(card?.bchAddressType);
+  if (isLtcCard(card)) return normalizeLtcAddressType(card?.ltcAddressType);
+  return "";
+};
+
+const getTypedBalancesForCard = (card, typedFields) => {
+  if (isBtcCard(card)) return typedFields?.btcAddressBalances;
+  if (isBchCard(card)) return typedFields?.bchAddressBalances;
+  if (isLtcCard(card)) return typedFields?.ltcAddressBalances;
+  return null;
 };
 
 const isPositiveAssetAmount = (asset) => parseNumericAmount(extractAssetAmount(asset)) > 0;
@@ -287,6 +457,8 @@ const buildAccountBalanceLookup = (
       lookup.set(key, {
         chain: acc?.chain || "",
         address: acc?.address || "",
+        addressType: acc?.addressType || "",
+        addressTypeName: acc?.addressTypeName || "",
         assets: Array.isArray(acc?.assets) ? acc.assets : [],
       });
       rankByLookupKey.set(key, normalizedRank);
@@ -637,68 +809,59 @@ export const fetchWalletBalance = async (
             : "0.0";
 
         if (chainKey && addrKey && accMap.size > 0) {
-          if (isBtcCard(card) && isLikelyNativeCard(card)) {
-            const queryAddresses = getCardQueryAddresses(card);
-            const matchedAccounts = queryAddresses
-              .map((queryAddress) =>
-                accMap.get(
-                  `${chainKey}__${normalizeAddressKey(queryAddress, chainKey)}`,
-                ),
-              )
-              .filter((acc) => acc && Array.isArray(acc.assets));
-            if (matchedAccounts.length > 0) {
-              const totalBalance = matchedAccounts.reduce((sum, acc) => {
-                const asset = findMatchedAsset(card, acc.assets);
-                return sum + parseNumericAmount(normalizeBalanceAmount(asset));
-              }, 0);
-              nextBalance = totalBalance.toString();
+          const typedBalanceFields = getTypedBalanceFieldsForCard(card, accounts);
+          if (typedBalanceFields) {
+            const activeType = getActiveAddressTypeForCard(card);
+            const typedBalances = getTypedBalancesForCard(card, typedBalanceFields);
+            if (typedBalances?.[activeType] != null) {
+              nextBalance = typedBalances[activeType];
             }
           } else {
-          const mapKey = `${chainKey}__${addrKey}`;
-          const acc = accMap.get(mapKey);
+            const mapKey = `${chainKey}__${addrKey}`;
+            const acc = accMap.get(mapKey);
 
-          if (!acc) {
-            devLog("[AssetsDataFetcher] no account match found ->", {
-              mapKey,
-              accMapKeys: Array.from(accMap.keys()),
-            });
-          }
-
-          if (acc && Array.isArray(acc.assets)) {
-            const asset = findMatchedAsset(card, acc.assets);
-
-            // If there is still no hit, print the available symbol (no details)
-            if (!asset) {
-              devLog("[AssetsDataFetcher] no matching asset found ->", {
-                chain: chainKey,
-                address: addrKey,
-                expectSymbols: getBalanceSymbolCandidates(card),
-                available: acc.assets.map((x) => x?.symbol).filter(Boolean),
-              });
-            } else {
-              devLog("[AssetsDataFetcher] asset match found ->", {
-                chain: chainKey,
-                address: addrKey,
-                cardSymbol: card?.shortName,
-                apiSymbol: asset?.symbol,
-                contractAddress: asset?.tokenContractAddress,
-                amount: asset?.amount,
+            if (!acc) {
+              devLog("[AssetsDataFetcher] no account match found ->", {
+                mapKey,
+                accMapKeys: Array.from(accMap.keys()),
               });
             }
 
-            if (asset) {
-              nextBalance = normalizeBalanceAmount(asset);
-              if (extractAssetAmount(asset) === "") {
-                devWarn("[AssetsDataFetcher] matched asset but balance field is empty, using 0.0 ->", {
+            if (acc && Array.isArray(acc.assets)) {
+              const asset = findMatchedAsset(card, acc.assets);
+
+              // If there is still no hit, print the available symbol (no details)
+              if (!asset) {
+                devLog("[AssetsDataFetcher] no matching asset found ->", {
+                  chain: chainKey,
+                  address: addrKey,
+                  expectSymbols: getBalanceSymbolCandidates(card),
+                  available: acc.assets.map((x) => x?.symbol).filter(Boolean),
+                });
+              } else {
+                devLog("[AssetsDataFetcher] asset match found ->", {
                   chain: chainKey,
                   address: addrKey,
                   cardSymbol: card?.shortName,
                   apiSymbol: asset?.symbol,
-                  rawAsset: asset,
+                  contractAddress: asset?.tokenContractAddress,
+                  amount: asset?.amount,
                 });
               }
+
+              if (asset) {
+                nextBalance = normalizeBalanceAmount(asset);
+                if (extractAssetAmount(asset) === "") {
+                  devWarn("[AssetsDataFetcher] matched asset but balance field is empty, using 0.0 ->", {
+                    chain: chainKey,
+                    address: addrKey,
+                    cardSymbol: card?.shortName,
+                    apiSymbol: asset?.symbol,
+                    rawAsset: asset,
+                  });
+                }
+              }
             }
-          }
           }
         }
 
@@ -709,16 +872,23 @@ export const fetchWalletBalance = async (
           Number.isFinite(balNum) && Number.isFinite(price) && price > 0
             ? (balNum * price).toFixed(2)
             : "0.0";
+        const nextTypedBalanceFields = getTypedBalanceFieldsForCard(card, accounts);
 
         if (
           card.balance !== nextBalance ||
-          card.EstimatedValue !== nextEstimated
+          card.EstimatedValue !== nextEstimated ||
+          (nextTypedBalanceFields &&
+            Object.entries(nextTypedBalanceFields).some(
+              ([key, value]) =>
+                JSON.stringify(card?.[key] ?? null) !== JSON.stringify(value),
+            ))
         ) {
           hasChange = true;
           return {
             ...card,
             balance: nextBalance,
             EstimatedValue: nextEstimated,
+            ...(nextTypedBalanceFields || {}),
           };
         }
         return card;

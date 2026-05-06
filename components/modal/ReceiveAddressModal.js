@@ -41,6 +41,11 @@ import {
   normalizeLtcAddressType,
   resolveLtcAddressByType,
 } from "../../utils/ltcAddress";
+import {
+  formatCryptoBalanceDisplay,
+  formatFiatBalanceDisplay,
+  formatScientific,
+} from "../../utils/assetDisplayFormat";
 
 /**
  * Universal payment address pop-up window
@@ -69,17 +74,31 @@ const ReceiveAddressModal = ({
   bchAddressType,
   bchCashAddr,
   bchLegacyAddr,
+  bchAddressBalances,
+  bchCashaddrBalance,
+  bchLegacyBalance,
   onSwitchBchAddressType,
   btcAddressType,
   btcLegacyAddr,
   btcNestedSegwitAddr,
   btcNativeSegwitAddr,
   btcTaprootAddr,
+  btcAddressBalances,
+  btcLegacyBalance,
+  btcNestedSegwitBalance,
+  btcNativeSegwitBalance,
+  btcTaprootBalance,
+  getConvertedBalance,
+  currencyUnit,
   onSwitchBtcAddressType,
   ltcAddressType,
   ltcLegacyAddr,
   ltcNestedSegwitAddr,
   ltcNativeSegwitAddr,
+  ltcAddressBalances,
+  ltcLegacyBalance,
+  ltcNestedSegwitBalance,
+  ltcNativeSegwitBalance,
   onSwitchLtcAddressType,
   hasVerifyAddressAttempted,
   isPreparingVerifyAddress,
@@ -139,17 +158,31 @@ const ReceiveAddressModal = ({
               bchAddressType={bchAddressType}
               bchCashAddr={bchCashAddr}
               bchLegacyAddr={bchLegacyAddr}
+              bchAddressBalances={bchAddressBalances}
+              bchCashaddrBalance={bchCashaddrBalance}
+              bchLegacyBalance={bchLegacyBalance}
               onSwitchBchAddressType={onSwitchBchAddressType}
               btcAddressType={btcAddressType}
               btcLegacyAddr={btcLegacyAddr}
               btcNestedSegwitAddr={btcNestedSegwitAddr}
               btcNativeSegwitAddr={btcNativeSegwitAddr}
               btcTaprootAddr={btcTaprootAddr}
+              btcAddressBalances={btcAddressBalances}
+              btcLegacyBalance={btcLegacyBalance}
+              btcNestedSegwitBalance={btcNestedSegwitBalance}
+              btcNativeSegwitBalance={btcNativeSegwitBalance}
+              btcTaprootBalance={btcTaprootBalance}
+              getConvertedBalance={getConvertedBalance}
+              currencyUnit={currencyUnit}
               onSwitchBtcAddressType={onSwitchBtcAddressType}
               ltcAddressType={ltcAddressType}
               ltcLegacyAddr={ltcLegacyAddr}
               ltcNestedSegwitAddr={ltcNestedSegwitAddr}
               ltcNativeSegwitAddr={ltcNativeSegwitAddr}
+              ltcAddressBalances={ltcAddressBalances}
+              ltcLegacyBalance={ltcLegacyBalance}
+              ltcNestedSegwitBalance={ltcNestedSegwitBalance}
+              ltcNativeSegwitBalance={ltcNativeSegwitBalance}
               onSwitchLtcAddressType={onSwitchLtcAddressType}
             />
             <QRCodeView address={address} cryptoIcon={cryptoIcon} />
@@ -261,18 +294,33 @@ const AddressRow = ({
         {value}
       </Text>
     </View>
-    <TouchableOpacity
-      onPress={() => {
-        Clipboard.setString(value);
-        onShowToast?.(t("Address copied to clipboard"));
+    <View
+      style={{
+        alignSelf: "stretch",
+        justifyContent: "flex-end",
+        paddingBottom: 2,
       }}
     >
-      <Icon
-        name="content-copy"
-        size={24}
-        color={isDarkMode ? "#ffffff" : "#676776"}
-      />
-    </TouchableOpacity>
+      <TouchableOpacity
+        onPress={() => {
+          Clipboard.setString(value);
+          onShowToast?.(t("Address copied to clipboard"));
+        }}
+        hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+        style={{
+          height: 32,
+          width: 32,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Icon
+          name="content-copy"
+          size={24}
+          color={isDarkMode ? "#ffffff" : "#676776"}
+        />
+      </TouchableOpacity>
+    </View>
   </View>
 );
 
@@ -282,6 +330,7 @@ const AddressTypeToggle = ({
   onSelect,
   isDarkMode,
   compact = false,
+  otherBalanceTagLabel = "",
 }) => {
   const [open, setOpen] = useState(false);
   const [labelWidth, setLabelWidth] = useState(0);
@@ -302,7 +351,10 @@ const AddressTypeToggle = ({
   const defaultText = isDarkMode ? "#D1D1D6" : "#55555F";
   const selectedPreview = isDarkMode ? "#D8D8DD" : "#7A7A85";
   const defaultPreview = isDarkMode ? "#9A9AA3" : "#9A9AA3";
+  const balanceText = isDarkMode ? "#F3F3F5" : "#2A2A2F";
+  const balanceMuted = isDarkMode ? "#BDBDC5" : "#7A7A85";
   const shadowColor = isDarkMode ? "#000" : "#8E8E99";
+  const tagLabel = String(otherBalanceTagLabel || "").trim();
 
   return (
     <View
@@ -313,40 +365,72 @@ const AddressTypeToggle = ({
         zIndex: 20,
       }}
     >
-      <TouchableOpacity
-        onPress={() => setOpen((prev) => !prev)}
-        activeOpacity={0.8}
+      <View
         style={{
-          width: toggleWidth,
           flexDirection: "row",
           alignItems: "center",
           alignSelf: "flex-start",
-          justifyContent: "flex-start",
-          paddingHorizontal: horizontalPadding,
-          paddingVertical: compact ? 5 : 8,
-          borderRadius: 12,
-          backgroundColor: toggleBg,
         }}
       >
-        <Text
-          numberOfLines={1}
+        <TouchableOpacity
+          onPress={() => setOpen((prev) => !prev)}
+          activeOpacity={0.8}
           style={{
-            marginBottom: 0,
-            textAlign: "left",
-            fontSize: compact ? 14 : 16,
-            lineHeight: compact ? 18 : 20,
-            color: toggleText,
+            width: toggleWidth,
+            flexDirection: "row",
+            alignItems: "center",
+            alignSelf: "flex-start",
+            justifyContent: "flex-start",
+            paddingHorizontal: horizontalPadding,
+            paddingVertical: compact ? 5 : 8,
+            borderRadius: 12,
+            backgroundColor: toggleBg,
           }}
         >
-          {activeOption.label}
-        </Text>
-        <Icon
-          name={open ? "keyboard-arrow-up" : "keyboard-arrow-down"}
-          size={18}
-          color={toggleText}
-          style={{ marginLeft: 6 }}
-        />
-      </TouchableOpacity>
+          <Text
+            numberOfLines={1}
+            style={{
+              marginBottom: 0,
+              textAlign: "left",
+              fontSize: compact ? 14 : 16,
+              lineHeight: compact ? 18 : 20,
+              color: toggleText,
+            }}
+          >
+            {activeOption.label}
+          </Text>
+          <Icon
+            name={open ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+            size={18}
+            color={toggleText}
+            style={{ marginLeft: 6 }}
+          />
+        </TouchableOpacity>
+        {tagLabel ? (
+          <TouchableOpacity
+            onPress={() => setOpen((prev) => !prev)}
+            activeOpacity={0.8}
+            style={{
+              marginLeft: 8,
+              paddingHorizontal: 10,
+              paddingVertical: compact ? 5 : 8,
+              borderRadius: 12,
+              backgroundColor: toggleBg,
+            }}
+          >
+            <Text
+              numberOfLines={1}
+              style={{
+                fontSize: compact ? 12 : 14,
+                lineHeight: compact ? 18 : 20,
+                color: toggleText,
+              }}
+            >
+              {tagLabel}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
 
       <Text
         pointerEvents="none"
@@ -406,28 +490,70 @@ const AddressTypeToggle = ({
                   backgroundColor: selected ? selectedBg : "transparent",
                 }}
               >
-                <Text
+                <View
                   style={{
-                    fontSize: 16,
-                    lineHeight: 20,
-                    color: selected ? selectedText : defaultText,
-                    fontWeight: selected ? "600" : "400",
+                    flexDirection: "row",
+                    alignItems: "flex-start",
+                    justifyContent: "space-between",
                   }}
                 >
-                  {option.label}
-                </Text>
-                {option.preview ? (
-                  <Text
-                    style={{
-                      marginTop: 3,
-                      fontSize: 13,
-                      lineHeight: 16,
-                      color: selected ? selectedPreview : defaultPreview,
-                    }}
-                  >
-                    {option.preview}
-                  </Text>
-                ) : null}
+                  <View style={{ flex: 1, minWidth: 0, paddingRight: 10 }}>
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        fontSize: 16,
+                        lineHeight: 20,
+                        color: selected ? selectedText : defaultText,
+                        fontWeight: selected ? "600" : "400",
+                      }}
+                    >
+                      {option.label}
+                    </Text>
+                    {option.preview ? (
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          marginTop: 3,
+                          fontSize: 13,
+                          lineHeight: 16,
+                          color: selected ? selectedPreview : defaultPreview,
+                        }}
+                      >
+                        {option.preview}
+                      </Text>
+                    ) : null}
+                  </View>
+                  {option.balanceText ? (
+                    <View style={{ alignItems: "flex-end", minWidth: 74 }}>
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          fontSize: 15,
+                          lineHeight: 19,
+                          color: balanceText,
+                          fontWeight: selected ? "600" : "500",
+                          textAlign: "right",
+                        }}
+                      >
+                        {option.balanceText}
+                      </Text>
+                      {option.balanceFiatText ? (
+                        <Text
+                          numberOfLines={1}
+                          style={{
+                            marginTop: 3,
+                            fontSize: 12,
+                            lineHeight: 15,
+                            color: balanceMuted,
+                            textAlign: "right",
+                          }}
+                        >
+                          {option.balanceFiatText}
+                        </Text>
+                      ) : null}
+                    </View>
+                  ) : null}
+                </View>
               </TouchableOpacity>
             );
           })}
@@ -447,17 +573,31 @@ const AddressInfo = ({
   bchAddressType,
   bchCashAddr,
   bchLegacyAddr,
+  bchAddressBalances,
+  bchCashaddrBalance,
+  bchLegacyBalance,
   onSwitchBchAddressType,
   btcAddressType,
   btcLegacyAddr,
   btcNestedSegwitAddr,
   btcNativeSegwitAddr,
   btcTaprootAddr,
+  btcAddressBalances,
+  btcLegacyBalance,
+  btcNestedSegwitBalance,
+  btcNativeSegwitBalance,
+  btcTaprootBalance,
+  getConvertedBalance,
+  currencyUnit,
   onSwitchBtcAddressType,
   ltcAddressType,
   ltcLegacyAddr,
   ltcNestedSegwitAddr,
   ltcNativeSegwitAddr,
+  ltcAddressBalances,
+  ltcLegacyBalance,
+  ltcNestedSegwitBalance,
+  ltcNativeSegwitBalance,
   onSwitchLtcAddressType,
 }) => {
   const safeAddress = (address || "").trim();
@@ -507,6 +647,46 @@ const AddressInfo = ({
       .trim()
       .replace(/^\(/, "")
       .replace(/\)$/, "");
+  const compactIfTooLong = (text, rawValue, maxLength = 11) => {
+    const value = Number(rawValue);
+    if (String(text || "").length <= maxLength || !Number.isFinite(value)) {
+      return text;
+    }
+    return formatScientific(value, 4);
+  };
+  const formatTypedBalance = (value, symbol) => {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return "0";
+    if (numeric === 0) return "0";
+    const formatted = formatCryptoBalanceDisplay(numeric, {
+      symbol,
+      context: "ReceiveAddressModal.addressTypeBalance",
+      compactLarge: true,
+    });
+    return compactIfTooLong(formatted, numeric);
+  };
+  const getTypedBalanceValue = (balancesByType, type, fallbackValue) => {
+    const direct = balancesByType?.[type];
+    return direct ?? fallbackValue ?? "0";
+  };
+  const getTypedBalanceText = (balancesByType, type, fallbackValue, symbol) => {
+    return formatTypedBalance(
+      getTypedBalanceValue(balancesByType, type, fallbackValue),
+      symbol,
+    );
+  };
+  const getTypedFiatText = (amountValue, symbol) => {
+    const converted =
+      typeof getConvertedBalance === "function"
+        ? getConvertedBalance(amountValue, symbol, "ReceiveAddressModal")
+        : "0.00";
+    const formatted = formatFiatBalanceDisplay(converted, {
+      compactLarge: true,
+    });
+    return `${compactIfTooLong(formatted, converted, 10)} ${
+      currencyUnit || "USD"
+    }`;
+  };
   const displayCashAddr = resolvedCashAddr
     ? resolvedCashAddr.includes(":")
       ? resolvedCashAddr
@@ -519,6 +699,25 @@ const AddressInfo = ({
         "(CashAddr format / P2PKH)",
         "CashAddr format / P2PKH",
       ),
+      balanceValue: getTypedBalanceValue(
+        bchAddressBalances,
+        BCH_ADDRESS_TYPES.CASHADDR,
+        bchCashaddrBalance,
+      ),
+      balanceText: getTypedBalanceText(
+        bchAddressBalances,
+        BCH_ADDRESS_TYPES.CASHADDR,
+        bchCashaddrBalance,
+        "BCH",
+      ),
+      balanceFiatText: getTypedFiatText(
+        getTypedBalanceValue(
+          bchAddressBalances,
+          BCH_ADDRESS_TYPES.CASHADDR,
+          bchCashaddrBalance,
+        ),
+        "BCH",
+      ),
       preview: formatPreview(
         displayCashAddr.includes(":")
           ? displayCashAddr
@@ -528,6 +727,25 @@ const AddressInfo = ({
     {
       key: BCH_ADDRESS_TYPES.LEGACY,
       label: formatLabel(legacyLabel, "Legacy format"),
+      balanceValue: getTypedBalanceValue(
+        bchAddressBalances,
+        BCH_ADDRESS_TYPES.LEGACY,
+        bchLegacyBalance,
+      ),
+      balanceText: getTypedBalanceText(
+        bchAddressBalances,
+        BCH_ADDRESS_TYPES.LEGACY,
+        bchLegacyBalance,
+        "BCH",
+      ),
+      balanceFiatText: getTypedFiatText(
+        getTypedBalanceValue(
+          bchAddressBalances,
+          BCH_ADDRESS_TYPES.LEGACY,
+          bchLegacyBalance,
+        ),
+        "BCH",
+      ),
       preview: formatPreview(resolvedLegacyAddr),
     },
   ].filter((option) => String(option.preview || "").trim() !== "");
@@ -542,6 +760,11 @@ const AddressInfo = ({
         resolvedType === BCH_ADDRESS_TYPES.LEGACY
           ? resolvedLegacyAddr
           : displayCashAddr;
+      const hasOtherBchBalance = bchOptions.some(
+        (option) =>
+          option.key !== resolvedType &&
+          Number(option.balanceValue || 0) > 0,
+      );
       addressRows = [
         {
           label: "",
@@ -552,6 +775,9 @@ const AddressInfo = ({
               onSelect={onSwitchBchAddressType}
               isDarkMode={isDarkMode}
               compact
+              otherBalanceTagLabel={
+                hasOtherBchBalance ? t("Other balances") : ""
+              }
             />
           ),
           value,
@@ -628,23 +854,104 @@ const AddressInfo = ({
           key: BTC_ADDRESS_TYPES.LEGACY,
           label: "Legacy / P2PKH",
           preview: formatPreview(resolvedLegacyAddr),
+          balanceValue: getTypedBalanceValue(
+            btcAddressBalances,
+            BTC_ADDRESS_TYPES.LEGACY,
+            btcLegacyBalance,
+          ),
+          balanceText: getTypedBalanceText(
+            btcAddressBalances,
+            BTC_ADDRESS_TYPES.LEGACY,
+            btcLegacyBalance,
+            "BTC",
+          ),
+          balanceFiatText: getTypedFiatText(
+            getTypedBalanceValue(
+              btcAddressBalances,
+              BTC_ADDRESS_TYPES.LEGACY,
+              btcLegacyBalance,
+            ),
+            "BTC",
+          ),
         },
         {
           key: BTC_ADDRESS_TYPES.NESTED_SEGWIT,
           label: "Nested SegWit / P2SH",
           preview: formatPreview(resolvedNestedAddr),
+          balanceValue: getTypedBalanceValue(
+            btcAddressBalances,
+            BTC_ADDRESS_TYPES.NESTED_SEGWIT,
+            btcNestedSegwitBalance,
+          ),
+          balanceText: getTypedBalanceText(
+            btcAddressBalances,
+            BTC_ADDRESS_TYPES.NESTED_SEGWIT,
+            btcNestedSegwitBalance,
+            "BTC",
+          ),
+          balanceFiatText: getTypedFiatText(
+            getTypedBalanceValue(
+              btcAddressBalances,
+              BTC_ADDRESS_TYPES.NESTED_SEGWIT,
+              btcNestedSegwitBalance,
+            ),
+            "BTC",
+          ),
         },
         {
           key: BTC_ADDRESS_TYPES.NATIVE_SEGWIT,
           label: "Native SegWit / Bech32",
           preview: formatPreview(resolvedNativeAddr),
+          balanceValue: getTypedBalanceValue(
+            btcAddressBalances,
+            BTC_ADDRESS_TYPES.NATIVE_SEGWIT,
+            btcNativeSegwitBalance,
+          ),
+          balanceText: getTypedBalanceText(
+            btcAddressBalances,
+            BTC_ADDRESS_TYPES.NATIVE_SEGWIT,
+            btcNativeSegwitBalance,
+            "BTC",
+          ),
+          balanceFiatText: getTypedFiatText(
+            getTypedBalanceValue(
+              btcAddressBalances,
+              BTC_ADDRESS_TYPES.NATIVE_SEGWIT,
+              btcNativeSegwitBalance,
+            ),
+            "BTC",
+          ),
         },
         {
           key: BTC_ADDRESS_TYPES.TAPROOT,
           label: "Taproot / Bech32m",
           preview: formatPreview(resolvedTaprootAddr),
+          balanceValue: getTypedBalanceValue(
+            btcAddressBalances,
+            BTC_ADDRESS_TYPES.TAPROOT,
+            btcTaprootBalance,
+          ),
+          balanceText: getTypedBalanceText(
+            btcAddressBalances,
+            BTC_ADDRESS_TYPES.TAPROOT,
+            btcTaprootBalance,
+            "BTC",
+          ),
+          balanceFiatText: getTypedFiatText(
+            getTypedBalanceValue(
+              btcAddressBalances,
+              BTC_ADDRESS_TYPES.TAPROOT,
+              btcTaprootBalance,
+            ),
+            "BTC",
+          ),
         },
       ].filter((option) => String(option.preview || "").trim() !== "");
+      const hasOtherBtcBalance = btcOptions.some(
+        (option) =>
+          option.key !== resolvedType &&
+          Number(option.balanceValue || 0) > 0,
+      );
       const value = resolveBtcAddressByType(
         resolvedType,
         safeAddress,
@@ -663,6 +970,9 @@ const AddressInfo = ({
               onSelect={onSwitchBtcAddressType}
               isDarkMode={isDarkMode}
               compact
+              otherBalanceTagLabel={
+                hasOtherBtcBalance ? t("Other balances") : ""
+              }
             />
           ),
           value,
@@ -696,18 +1006,80 @@ const AddressInfo = ({
           key: LTC_ADDRESS_TYPES.LEGACY,
           label: "Legacy / P2PKH",
           preview: formatPreview(resolvedLegacyAddr),
+          balanceValue: getTypedBalanceValue(
+            ltcAddressBalances,
+            LTC_ADDRESS_TYPES.LEGACY,
+            ltcLegacyBalance,
+          ),
+          balanceText: getTypedBalanceText(
+            ltcAddressBalances,
+            LTC_ADDRESS_TYPES.LEGACY,
+            ltcLegacyBalance,
+            "LTC",
+          ),
+          balanceFiatText: getTypedFiatText(
+            getTypedBalanceValue(
+              ltcAddressBalances,
+              LTC_ADDRESS_TYPES.LEGACY,
+              ltcLegacyBalance,
+            ),
+            "LTC",
+          ),
         },
         {
           key: LTC_ADDRESS_TYPES.NESTED_SEGWIT,
           label: "Nested SegWit / P2SH",
           preview: formatPreview(resolvedNestedAddr),
+          balanceValue: getTypedBalanceValue(
+            ltcAddressBalances,
+            LTC_ADDRESS_TYPES.NESTED_SEGWIT,
+            ltcNestedSegwitBalance,
+          ),
+          balanceText: getTypedBalanceText(
+            ltcAddressBalances,
+            LTC_ADDRESS_TYPES.NESTED_SEGWIT,
+            ltcNestedSegwitBalance,
+            "LTC",
+          ),
+          balanceFiatText: getTypedFiatText(
+            getTypedBalanceValue(
+              ltcAddressBalances,
+              LTC_ADDRESS_TYPES.NESTED_SEGWIT,
+              ltcNestedSegwitBalance,
+            ),
+            "LTC",
+          ),
         },
         {
           key: LTC_ADDRESS_TYPES.NATIVE_SEGWIT,
           label: "Native SegWit / Bech32",
           preview: formatPreview(resolvedNativeAddr),
+          balanceValue: getTypedBalanceValue(
+            ltcAddressBalances,
+            LTC_ADDRESS_TYPES.NATIVE_SEGWIT,
+            ltcNativeSegwitBalance,
+          ),
+          balanceText: getTypedBalanceText(
+            ltcAddressBalances,
+            LTC_ADDRESS_TYPES.NATIVE_SEGWIT,
+            ltcNativeSegwitBalance,
+            "LTC",
+          ),
+          balanceFiatText: getTypedFiatText(
+            getTypedBalanceValue(
+              ltcAddressBalances,
+              LTC_ADDRESS_TYPES.NATIVE_SEGWIT,
+              ltcNativeSegwitBalance,
+            ),
+            "LTC",
+          ),
         },
       ].filter((option) => String(option.preview || "").trim() !== "");
+      const hasOtherLtcBalance = ltcOptions.some(
+        (option) =>
+          option.key !== resolvedType &&
+          Number(option.balanceValue || 0) > 0,
+      );
       const value = resolveLtcAddressByType(
         resolvedType,
         safeAddress,
@@ -725,6 +1097,9 @@ const AddressInfo = ({
               onSelect={onSwitchLtcAddressType}
               isDarkMode={isDarkMode}
               compact
+              otherBalanceTagLabel={
+                hasOtherLtcBalance ? t("Other balances") : ""
+              }
             />
           ),
           value,

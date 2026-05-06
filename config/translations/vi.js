@@ -286,5 +286,7 @@ export const vi = {
     "Transaction canceled": "Đã hủy giao dịch",
     "Invalid signature returned by device.": "Thiết bị trả về chữ ký không hợp lệ.",
     "Signed. Broadcasting transaction...": "Đã ký. Đang phát giao dịch...",
+    "Other balances": "Số dư khác",
+
   },
 };

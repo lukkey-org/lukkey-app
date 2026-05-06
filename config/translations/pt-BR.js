@@ -286,5 +286,7 @@ export const ptBR = {
     "Transaction canceled": "Transação cancelada",
     "Invalid signature returned by device.": "O dispositivo retornou uma assinatura inválida.",
     "Signed. Broadcasting transaction...": "Assinado. Transmitindo transação...",
+    "Other balances": "Outros saldos",
+
   },
 };

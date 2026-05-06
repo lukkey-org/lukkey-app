@@ -13,6 +13,13 @@ export const BTC_ADDRESS_TYPES = {
   TAPROOT: "taproot",
 };
 
+const BTC_BALANCE_FIELD_BY_TYPE = {
+  [BTC_ADDRESS_TYPES.LEGACY]: "btcLegacyBalance",
+  [BTC_ADDRESS_TYPES.NESTED_SEGWIT]: "btcNestedSegwitBalance",
+  [BTC_ADDRESS_TYPES.NATIVE_SEGWIT]: "btcNativeSegwitBalance",
+  [BTC_ADDRESS_TYPES.TAPROOT]: "btcTaprootBalance",
+};
+
 const BTC_CHAIN_NAMES = new Set(["btc", "bitcoin"]);
 const BASE58_ALPHABET =
   "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
@@ -607,8 +614,11 @@ export const enrichBtcAddressData = (
     btcNativeSegwitAddr,
     btcTaprootAddr,
   );
+  const typedBalance =
+    card?.btcAddressBalances?.[nextType] ??
+    card?.[BTC_BALANCE_FIELD_BY_TYPE[nextType]];
 
-  return {
+  const nextCard = {
     ...card,
     btcAddressType: nextType,
     btcLegacyAddr,
@@ -617,6 +627,16 @@ export const enrichBtcAddressData = (
     btcTaprootAddr,
     address,
   };
+  if (typedBalance !== undefined && typedBalance !== null) {
+    const nextBalance = String(typedBalance);
+    nextCard.balance = nextBalance;
+    const priceUsd = Number(card?.priceUsd ?? 0);
+    const balanceNumber = Number(nextBalance);
+    if (Number.isFinite(priceUsd) && priceUsd > 0 && Number.isFinite(balanceNumber)) {
+      nextCard.EstimatedValue = (balanceNumber * priceUsd).toFixed(2);
+    }
+  }
+  return nextCard;
 };
 
 export const switchBtcAddressTypeForCard = (card, nextType) =>

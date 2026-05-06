@@ -289,5 +289,7 @@ export const zhTW = {
     "Transaction canceled": "交易已取消",
     "Invalid signature returned by device.": "裝置回傳了無效簽名。",
     "Signed. Broadcasting transaction...": "已簽名，正在廣播交易...",
+    "Other balances": "其他有餘額",
+
   },
 };

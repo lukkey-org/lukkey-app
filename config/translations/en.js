@@ -328,5 +328,7 @@ export const en = {
     "The device did not respond in time. Please try again.": "The device did not respond in time. Please try again.",
     "Firmware update complete": "Firmware update complete",
     "Transfer complete. Please wait while your Lukkey device finishes the update.": "Transfer complete. Please wait while your Lukkey device finishes the update.",
+    "Other balances": "Other balances",
+
   },
 };

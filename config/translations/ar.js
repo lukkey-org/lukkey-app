@@ -337,5 +337,7 @@ export const ar = {
     "Transaction canceled": "تم إلغاء المعاملة",
     "Invalid signature returned by device.": "أعاد الجهاز توقيعًا غير صالح.",
     "Signed. Broadcasting transaction...": "تم التوقيع. جارٍ بث المعاملة...",
+    "Other balances": "أرصدة أخرى",
+
   },
 };

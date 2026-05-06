@@ -286,5 +286,7 @@ export const bn = {
     "Transaction canceled": "লেনদেন বাতিল করা হয়েছে",
     "Invalid signature returned by device.": "ডিভাইস একটি অবৈধ স্বাক্ষর ফিরিয়েছে।",
     "Signed. Broadcasting transaction...": "স্বাক্ষর সম্পন্ন। লেনদেন সম্প্রচার করা হচ্ছে...",
+    "Other balances": "অন্যান্য ব্যালেন্স",
+
   },
 };

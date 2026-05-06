@@ -286,5 +286,7 @@ export const ja = {
     "Transaction canceled": "トランザクションがキャンセルされました",
     "Invalid signature returned by device.": "デバイスから無効な署名が返されました。",
     "Signed. Broadcasting transaction...": "署名済み。トランザクションをブロードキャストしています...",
+    "Other balances": "他にも残高あり",
+
   },
 };

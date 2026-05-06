@@ -286,5 +286,7 @@ export const hi = {
     "Transaction canceled": "लेनदेन रद्द किया गया",
     "Invalid signature returned by device.": "डिवाइस ने अमान्य हस्ताक्षर लौटाया।",
     "Signed. Broadcasting transaction...": "हस्ताक्षर हो गया। लेनदेन प्रसारित किया जा रहा है...",
+    "Other balances": "अन्य शेष राशि",
+
   },
 };

@@ -286,5 +286,7 @@ export const uk = {
     "Transaction canceled": "Транзакцію скасовано",
     "Invalid signature returned by device.": "Пристрій повернув недійсний підпис.",
     "Signed. Broadcasting transaction...": "Підписано. Трансляція транзакції...",
+    "Other balances": "Є інші баланси",
+
   },
 };

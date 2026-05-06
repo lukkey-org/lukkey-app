@@ -286,5 +286,7 @@ export const es = {
     "Transaction canceled": "Transacción cancelada",
     "Invalid signature returned by device.": "El dispositivo devolvió una firma no válida.",
     "Signed. Broadcasting transaction...": "Firmado. Transmitiendo transacción...",
+    "Other balances": "Otros saldos",
+
   },
 };
