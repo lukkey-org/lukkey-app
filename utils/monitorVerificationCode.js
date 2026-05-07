@@ -11,7 +11,22 @@ import {
   getStoredPubkey,
   setStoredPubkey,
 } from "./pubkeyStorage";
-import { isBchCashAddr, isBchLegacyAddress } from "../config/networkUtils";
+import {
+  BCH_ADDRESS_TYPES,
+  isBchCashAddr,
+  isBchLegacyAddress,
+  normalizeBchAddressType,
+} from "../config/networkUtils";
+import {
+  BTC_ADDRESS_TYPES,
+  getBtcAddressType,
+  normalizeBtcAddressType,
+} from "./btcAddress";
+import {
+  LTC_ADDRESS_TYPES,
+  getLtcAddressType,
+  normalizeLtcAddressType,
+} from "./ltcAddress";
 import { RUNTIME_DEV } from "./runtimeFlags";
 import { getDeviceAuthKey } from "./deviceAuth";
 import { DEVICE_RESPONSES } from "./deviceProtocolConstants";
@@ -21,6 +36,62 @@ const pubkeyLogCache = new Map();
 const pubkeyStatusLogCache = new Map();
 const syncLogDedupCache = new Map();
 const SYNC_VERBOSE_TRANSPORT = false;
+const BTC_SYNC_KEY_BY_TYPE = {
+  [BTC_ADDRESS_TYPES.LEGACY]: "BTC_LEGACY",
+  [BTC_ADDRESS_TYPES.NESTED_SEGWIT]: "BTC_NESTED_SEGWIT",
+  [BTC_ADDRESS_TYPES.NATIVE_SEGWIT]: "BTC_NATIVE_SEGWIT",
+  [BTC_ADDRESS_TYPES.TAPROOT]: "BTC_TAPROOT",
+};
+const BCH_SYNC_KEY_BY_TYPE = {
+  [BCH_ADDRESS_TYPES.CASHADDR]: "BCH_CASHADDR",
+  [BCH_ADDRESS_TYPES.LEGACY]: "BCH_LEGACY",
+};
+const LTC_SYNC_KEY_BY_TYPE = {
+  [LTC_ADDRESS_TYPES.LEGACY]: "LTC_LEGACY",
+  [LTC_ADDRESS_TYPES.NESTED_SEGWIT]: "LTC_NESTED_SEGWIT",
+  [LTC_ADDRESS_TYPES.NATIVE_SEGWIT]: "LTC_NATIVE_SEGWIT",
+};
+
+const resolveBtcSyncType = (addrFormat = "", address = "") => {
+  const normalizedFormat = String(addrFormat || "").trim().toLowerCase();
+  if (BTC_SYNC_KEY_BY_TYPE[normalizedFormat]) return normalizedFormat;
+  const inferred = getBtcAddressType(address);
+  return BTC_SYNC_KEY_BY_TYPE[inferred]
+    ? inferred
+    : normalizeBtcAddressType(normalizedFormat);
+};
+
+const getBtcSyncKey = (addrFormat = "", address = "") => {
+  const type = resolveBtcSyncType(addrFormat, address);
+  return BTC_SYNC_KEY_BY_TYPE[type] || "BTC_NESTED_SEGWIT";
+};
+
+const resolveBchSyncType = (addrFormat = "", address = "") => {
+  const normalizedFormat = String(addrFormat || "").trim().toLowerCase();
+  if (BCH_SYNC_KEY_BY_TYPE[normalizedFormat]) return normalizedFormat;
+  if (isBchLegacyAddress(address)) return BCH_ADDRESS_TYPES.LEGACY;
+  if (isBchCashAddr(address)) return BCH_ADDRESS_TYPES.CASHADDR;
+  return normalizeBchAddressType(normalizedFormat);
+};
+
+const getBchSyncKey = (addrFormat = "", address = "") => {
+  const type = resolveBchSyncType(addrFormat, address);
+  return BCH_SYNC_KEY_BY_TYPE[type] || "BCH_CASHADDR";
+};
+
+const resolveLtcSyncType = (addrFormat = "", address = "") => {
+  const normalizedFormat = String(addrFormat || "").trim().toLowerCase();
+  if (LTC_SYNC_KEY_BY_TYPE[normalizedFormat]) return normalizedFormat;
+  const inferred = getLtcAddressType(address);
+  return LTC_SYNC_KEY_BY_TYPE[inferred]
+    ? inferred
+    : normalizeLtcAddressType(normalizedFormat);
+};
+
+const getLtcSyncKey = (addrFormat = "", address = "") => {
+  const type = resolveLtcSyncType(addrFormat, address);
+  return LTC_SYNC_KEY_BY_TYPE[type] || "LTC_NESTED_SEGWIT";
+};
 const ANSI_COLORS = {
   reset: "\u001b[0m",
   green: "\u001b[32m",
@@ -296,7 +367,7 @@ function createMonitorVerificationCode({
       case "FTM":
       case "HTX":
       case "IOTX":
-      // case "OKT": // OKB/OKX Chain support disabled.
+      // case "OKT": // OKB is no longer supported.
       case "POL":
       case "ZKSYNC":
       case "GNO":
@@ -1025,12 +1096,14 @@ function createMonitorVerificationCode({
               ) {
                 const queryChainShortName = pendingAddress.chain;
                 const newAddress = pendingAddress.value.trim();
+                const syncKey = pendingAddress.syncKey || queryChainShortName;
+                const addressMeta = pendingAddress.meta || {};
                 pendingAddress = null;
-                updateCryptoAddress(queryChainShortName, newAddress);
-                resolvePendingRequest(`address:${queryChainShortName}`);
+                updateCryptoAddress(queryChainShortName, newAddress, addressMeta);
+                resolvePendingRequest(`address:${syncKey}`);
                 receivedAddressesSnapshot = {
                   ...(receivedAddressesSnapshot || {}),
-                  [queryChainShortName]: newAddress,
+                  [syncKey]: newAddress,
                 };
               } else if (pendingAddress.value.length > 128) {
                 pendingAddress = null;
@@ -1042,7 +1115,39 @@ function createMonitorVerificationCode({
           const newAddress = parsed.addr.trim();
           const queryChainShortName =
             prefixToShortName[chainName + ":"] || chainName.toUpperCase();
-          const chainKey = String(queryChainShortName || "").toUpperCase();
+          const normalizedChainName = String(chainName || "").trim().toLowerCase();
+          const parsedAddrFormat =
+            parsed.addr_format || parsed.addrFormat || parsed.format;
+          const btcAddressType =
+            normalizedChainName === "bitcoin"
+              ? resolveBtcSyncType(parsedAddrFormat, newAddress)
+              : "";
+          const bchAddressType =
+            normalizedChainName === "bitcoin_cash" ||
+            normalizedChainName === "bitcoincash"
+              ? resolveBchSyncType(parsedAddrFormat, newAddress)
+              : "";
+          const ltcAddressType =
+            normalizedChainName === "litecoin"
+              ? resolveLtcSyncType(parsedAddrFormat, newAddress)
+              : "";
+          let syncKey = String(queryChainShortName || "").toUpperCase();
+          if (normalizedChainName === "bitcoin") {
+            syncKey = getBtcSyncKey(parsedAddrFormat, newAddress);
+          } else if (
+            normalizedChainName === "bitcoin_cash" ||
+            normalizedChainName === "bitcoincash"
+          ) {
+            syncKey = getBchSyncKey(parsedAddrFormat, newAddress);
+          } else if (normalizedChainName === "litecoin") {
+            syncKey = getLtcSyncKey(parsedAddrFormat, newAddress);
+          }
+          const addressMeta = {
+            ...(btcAddressType ? { btcAddressType } : {}),
+            ...(bchAddressType ? { bchAddressType } : {}),
+            ...(ltcAddressType ? { ltcAddressType } : {}),
+          };
+          const chainKey = syncKey;
           if (
             expectedAddressShortNamesSet &&
             expectedAddressShortNamesSet.size > 0 &&
@@ -1051,14 +1156,19 @@ function createMonitorVerificationCode({
             continue;
           }
           if (!isValidAddressByChain(queryChainShortName, newAddress)) {
-            pendingAddress = { chain: queryChainShortName, value: newAddress };
+            pendingAddress = {
+              chain: queryChainShortName,
+              value: newAddress,
+              syncKey,
+              meta: addressMeta,
+            };
             continue;
           }
-          updateCryptoAddress(queryChainShortName, newAddress);
-          resolvePendingRequest(`address:${queryChainShortName}`);
+          updateCryptoAddress(queryChainShortName, newAddress, addressMeta);
+          resolvePendingRequest(`address:${syncKey}`);
           receivedAddressesSnapshot = {
             ...(receivedAddressesSnapshot || {}),
-            [queryChainShortName]: newAddress,
+            [syncKey]: newAddress,
           };
           checkReadyFromSnapshots(device);
 
@@ -1066,7 +1176,7 @@ function createMonitorVerificationCode({
           let nextMissingChains = [];
           let nextAddressStatusLines = null;
           setReceivedAddresses((prev) => {
-            const updated = { ...prev, [queryChainShortName]: newAddress };
+            const updated = { ...prev, [syncKey]: newAddress };
             const expectedList = getExpectedAddressShortNames();
             const expectedCount = expectedList.length;
 

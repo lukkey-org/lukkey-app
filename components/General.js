@@ -38,7 +38,7 @@ import { confirmDeleteWallet } from "../utils/confirmDeleteWallet";
 import { languages } from "../config/languages";
 import base64 from "base64-js";
 import { Buffer } from "buffer";
-import { prefixToShortName } from "../config/chainPrefixes";
+import { getAddressSyncKeys, prefixToShortName } from "../config/chainPrefixes";
 import { createHandlePinSubmit } from "../utils/handlePinSubmit";
 import { parseDeviceCode } from "../utils/parseDeviceCode";
 import { bluetoothConfig } from "../env/bluetoothConfig";
@@ -1460,7 +1460,7 @@ function SecureDeviceScreen({ onDarkModeChange }) {
                     "aptos",
                   ].includes(k)
                 ).length) /
-              (Object.keys(prefixToShortName).length + 5)
+              (getAddressSyncKeys(prefixToShortName).length + 5)
             : verificationStatus === "otaSending" ||
               verificationStatus === "otaInstalling"
             ? checkStatusProgress

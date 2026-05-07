@@ -5,7 +5,6 @@
  */
 import {
   BCH_ADDRESS_TYPES,
-  deriveBchAddressFormats,
   isBchCashAddr,
   isBchLegacyAddress,
   isBchChainName,
@@ -35,13 +34,12 @@ export const enrichBchAddressData = (card, preferredType = "") => {
   const rawAddress = normalizeAddressInput(card?.address);
   const hintedCash = normalizeAddressInput(card?.bchCashAddr);
   const hintedLegacy = normalizeAddressInput(card?.bchLegacyAddr);
+  const rawType = getBchAddressType(rawAddress);
 
-  const fromAddress = deriveBchAddressFormats(rawAddress);
-  const fromCash = deriveBchAddressFormats(hintedCash);
-  const fromLegacy = deriveBchAddressFormats(hintedLegacy);
-
-  const bchCashAddr = fromAddress.cashaddr || fromCash.cashaddr || fromLegacy.cashaddr || "";
-  const bchLegacyAddr = fromAddress.legacy || fromCash.legacy || fromLegacy.legacy || "";
+  const bchCashAddr =
+    hintedCash || (rawType === BCH_ADDRESS_TYPES.CASHADDR ? rawAddress : "");
+  const bchLegacyAddr =
+    hintedLegacy || (rawType === BCH_ADDRESS_TYPES.LEGACY ? rawAddress : "");
 
   const nextType = normalizeBchAddressType(
     preferredType ||

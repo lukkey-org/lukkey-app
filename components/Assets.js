@@ -33,7 +33,7 @@ import { VaultScreenStylesRoot } from "../styles/styles";
 import { ActivityScreenStylesRoot } from "../styles/styles";
 import { DeviceContext, DarkModeContext } from "../utils/DeviceContext";
 
-import { prefixToShortName } from "../config/chainPrefixes";
+import { getAddressSyncKeys, prefixToShortName } from "../config/chainPrefixes";
 import { createHandlePinSubmit } from "../utils/handlePinSubmit";
 import AssetsPage from "./AssetsScreen/AssetsPage";
 import AssetsTabView from "./AssetsScreen/AssetsTabView";
@@ -2678,7 +2678,7 @@ function VaultScreen({ route, navigation }) {
         onSendPinFail={sendPinFailOnCancel}
         CheckStatusModalVisible={CheckStatusModalVisible}
         setCheckStatusModalVisible={setCheckStatusModalVisible}
-        missingChains={Object.values(prefixToShortName).filter(
+        missingChains={getAddressSyncKeys(prefixToShortName).filter(
           (shortName) => !(receivedAddresses || {})[shortName],
         )}
         receivedAddresses={receivedAddresses}

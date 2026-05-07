@@ -24,7 +24,6 @@ import AnimatedWebP from "../common/AnimatedWebP";
 import DevToast from "../common/DevToast";
 import {
   BCH_ADDRESS_TYPES,
-  deriveBchAddressFormats,
   isBchCashAddr,
   normalizeBchAddressType,
   resolveBchAddressByType,
@@ -614,25 +613,20 @@ const AddressInfo = ({
 
   let addressRows = [];
   let resolvedType = normalizeBchAddressType(bchAddressType);
-  const derivedFormats = deriveBchAddressFormats(
-    safeAddress || bchCashAddr || bchLegacyAddr,
-  );
   const resolvedCashAddr = resolveBchAddressByType(
     BCH_ADDRESS_TYPES.CASHADDR,
     safeAddress,
-    bchCashAddr || derivedFormats.cashaddr,
-    bchLegacyAddr || derivedFormats.legacy,
+    bchCashAddr,
+    bchLegacyAddr,
   );
   const resolvedLegacyAddr = resolveBchAddressByType(
     BCH_ADDRESS_TYPES.LEGACY,
     safeAddress,
-    bchCashAddr || derivedFormats.cashaddr,
-    bchLegacyAddr || derivedFormats.legacy,
+    bchCashAddr,
+    bchLegacyAddr,
   );
-  const hasCashAddr = Boolean(
-    derivedFormats.cashaddr || isBchCashAddr(resolvedCashAddr),
-  );
-  const hasLegacyAddr = Boolean(derivedFormats.legacy);
+  const hasCashAddr = Boolean(bchCashAddr || isBchCashAddr(resolvedCashAddr));
+  const hasLegacyAddr = Boolean(bchLegacyAddr);
   const legacyLabel = String(resolvedLegacyAddr || "").startsWith("3")
     ? t("(Legacy format / P2SH)")
     : t("(Legacy format / P2PKH)");

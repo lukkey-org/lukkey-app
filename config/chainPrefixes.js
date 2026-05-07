@@ -28,7 +28,7 @@ export const prefixToShortName = {
   "fantom:": "FTM", // Fantom
   "huobi:": "HTX", // Huobi Token
   "iotex:": "IOTX", // IoTeX
-  // "okb:": "OKT", // OKB/OKX Chain support disabled.
+  // "okb:": "OKT", // OKB is no longer supported.
   "polygon:": "POL", // Polygon
   "tron:": "TRX", // Tron
   "zksync:": "ZKSYNC", // zkSync Era
@@ -43,3 +43,59 @@ export const prefixToShortName = {
   "aptos:": "APT", // Aptos
   "sui:": "SUI", // SUI
 };
+
+export const ADDRESS_SYNC_FORMATS_BY_CHAIN = {
+  bitcoin: [
+    { addrFormat: "legacy", syncKey: "BTC_LEGACY" },
+    { addrFormat: "nested_segwit", syncKey: "BTC_NESTED_SEGWIT" },
+    { addrFormat: "native_segwit", syncKey: "BTC_NATIVE_SEGWIT" },
+    { addrFormat: "taproot", syncKey: "BTC_TAPROOT" },
+  ],
+  bitcoin_cash: [
+    { addrFormat: "cashaddr", syncKey: "BCH_CASHADDR" },
+    { addrFormat: "legacy", syncKey: "BCH_LEGACY" },
+  ],
+  litecoin: [
+    { addrFormat: "legacy", syncKey: "LTC_LEGACY" },
+    { addrFormat: "nested_segwit", syncKey: "LTC_NESTED_SEGWIT" },
+    { addrFormat: "native_segwit", syncKey: "LTC_NATIVE_SEGWIT" },
+  ],
+};
+
+export const normalizeAddressSyncChainName = (chainName) => {
+  const normalized = String(chainName || "").trim().toLowerCase();
+  if (normalized === "bitcoincash") return "bitcoin_cash";
+  return normalized;
+};
+
+export const getAddressSyncRequests = (prefixMap = prefixToShortName) => {
+  const requests = [];
+  const seen = new Set();
+  for (const prefix of Object.keys(prefixMap || {})) {
+    const chainName = normalizeAddressSyncChainName(prefix.replace(":", ""));
+    const shortName = prefixMap[prefix];
+    const formats = ADDRESS_SYNC_FORMATS_BY_CHAIN[chainName];
+    if (Array.isArray(formats)) {
+      for (const format of formats) {
+        const requestKey = `${format.syncKey}:${chainName}:${format.addrFormat}`;
+        if (seen.has(requestKey)) continue;
+        seen.add(requestKey);
+        requests.push({
+          chainName,
+          shortName,
+          addrFormat: format.addrFormat,
+          syncKey: format.syncKey,
+        });
+      }
+      continue;
+    }
+    const requestKey = `${shortName}:${chainName}`;
+    if (seen.has(requestKey)) continue;
+    seen.add(requestKey);
+    requests.push({ chainName, shortName, addrFormat: "", syncKey: shortName });
+  }
+  return requests;
+};
+
+export const getAddressSyncKeys = (prefixMap = prefixToShortName) =>
+  getAddressSyncRequests(prefixMap).map((request) => request.syncKey);

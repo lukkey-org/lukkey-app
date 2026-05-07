@@ -471,50 +471,6 @@ export const getBtcAddressType = (address) => {
 
 export const isBtcAddress = (address) => !!getBtcAddressType(address);
 
-export const deriveBtcAddressesFromPubkeys = (pubkeysByType = {}) => {
-  const out = {
-    legacy: "",
-    nestedSegwit: "",
-    nativeSegwit: "",
-    taproot: "",
-  };
-
-  const legacyPubkey = decodeExtendedPubkey(pubkeysByType.legacy);
-  if (legacyPubkey) {
-    out.legacy = encodeBase58Check(
-      Uint8Array.from([0x00, ...hash160(legacyPubkey)]),
-    );
-  }
-
-  const nestedPubkey = decodeExtendedPubkey(pubkeysByType.nestedSegwit);
-  if (nestedPubkey) {
-    const redeemScript = Uint8Array.from([0x00, 0x14, ...hash160(nestedPubkey)]);
-    out.nestedSegwit = encodeBase58Check(
-      Uint8Array.from([0x05, ...hash160(redeemScript)]),
-    );
-  }
-
-  const nativePubkey = decodeExtendedPubkey(pubkeysByType.nativeSegwit);
-  if (nativePubkey) {
-    out.nativeSegwit = encodeSegwitAddress(
-      "bc",
-      0,
-      hash160(nativePubkey),
-      "bech32",
-    );
-  }
-
-  const taprootPubkey = decodeExtendedPubkey(pubkeysByType.taproot);
-  if (taprootPubkey) {
-    const outputKey = getTaprootOutputKey(taprootPubkey);
-    if (outputKey) {
-      out.taproot = encodeSegwitAddress("bc", 1, outputKey, "bech32m");
-    }
-  }
-
-  return out;
-};
-
 export const resolveBtcAddressByType = (
   targetType,
   address,
@@ -571,7 +527,6 @@ export const resolveBtcAddressByType = (
 export const enrichBtcAddressData = (
   card,
   preferredType = "",
-  pubkeysByType = {},
 ) => {
   if (!card || typeof card !== "object") return card;
   if (!isBtcCard(card)) return card;
@@ -586,19 +541,14 @@ export const enrichBtcAddressData = (
       inferredType === BTC_ADDRESS_TYPES.NATIVE_SEGWIT ? rawAddress : "",
     taproot: inferredType === BTC_ADDRESS_TYPES.TAPROOT ? rawAddress : "",
   };
-  const derived = deriveBtcAddressesFromPubkeys(pubkeysByType);
   const btcLegacyAddr =
-    normalizeAddressInput(card?.btcLegacyAddr) || inferred.legacy || derived.legacy;
+    normalizeAddressInput(card?.btcLegacyAddr) || inferred.legacy;
   const btcNestedSegwitAddr =
-    normalizeAddressInput(card?.btcNestedSegwitAddr) ||
-    inferred.nestedSegwit ||
-    derived.nestedSegwit;
+    normalizeAddressInput(card?.btcNestedSegwitAddr) || inferred.nestedSegwit;
   const btcNativeSegwitAddr =
-    normalizeAddressInput(card?.btcNativeSegwitAddr) ||
-    inferred.nativeSegwit ||
-    derived.nativeSegwit;
+    normalizeAddressInput(card?.btcNativeSegwitAddr) || inferred.nativeSegwit;
   const btcTaprootAddr =
-    normalizeAddressInput(card?.btcTaprootAddr) || inferred.taproot || derived.taproot;
+    normalizeAddressInput(card?.btcTaprootAddr) || inferred.taproot;
 
   const nextType = normalizeBtcAddressType(
     preferredType ||

@@ -11,6 +11,7 @@ import BluetoothModal from "../modal/BluetoothModal";
 import SecurityCodeModal from "../modal/SecurityCodeModal";
 import CheckStatusModal from "../modal/CheckStatusModal";
 import { resolveAssetIcon } from "../../utils/assetIconResolver";
+import { getAddressSyncKeys } from "../../config/chainPrefixes";
 
 // New introduction
 import ChainSelectorModal from "../modal/ChainSelectorModal";
@@ -312,7 +313,7 @@ const ModalsContainer = ({
                     "aptos",
                   ].includes(k),
                 ).length) /
-              (Object.keys(prefixToShortName).length + 5)
+              (getAddressSyncKeys(prefixToShortName).length + 5)
             : activeStatus === "nftSaving"
               ? checkStatusProgress
               : undefined

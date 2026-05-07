@@ -325,36 +325,6 @@ export const getLtcAddressType = (address) => {
 
 export const isLtcAddress = (address) => !!getLtcAddressType(address);
 
-export const deriveLtcAddressesFromPubkeys = (pubkeysByType = {}) => {
-  const out = {
-    legacy: "",
-    nestedSegwit: "",
-    nativeSegwit: "",
-  };
-
-  const legacyPubkey = decodeExtendedPubkey(pubkeysByType.legacy);
-  if (legacyPubkey) {
-    out.legacy = encodeBase58Check(
-      Uint8Array.from([0x30, ...hash160(legacyPubkey)]),
-    );
-  }
-
-  const nestedPubkey = decodeExtendedPubkey(pubkeysByType.nestedSegwit);
-  if (nestedPubkey) {
-    const redeemScript = Uint8Array.from([0x00, 0x14, ...hash160(nestedPubkey)]);
-    out.nestedSegwit = encodeBase58Check(
-      Uint8Array.from([0x32, ...hash160(redeemScript)]),
-    );
-  }
-
-  const nativePubkey = decodeExtendedPubkey(pubkeysByType.nativeSegwit);
-  if (nativePubkey) {
-    out.nativeSegwit = encodeSegwitAddress("ltc", 0, hash160(nativePubkey));
-  }
-
-  return out;
-};
-
 export const resolveLtcAddressByType = (
   targetType,
   address,
@@ -382,7 +352,6 @@ export const resolveLtcAddressByType = (
 export const enrichLtcAddressData = (
   card,
   preferredType = "",
-  pubkeysByType = {},
 ) => {
   if (!card || typeof card !== "object") return card;
   if (!isLtcCard(card)) return card;
@@ -396,17 +365,12 @@ export const enrichLtcAddressData = (
     nativeSegwit:
       inferredType === LTC_ADDRESS_TYPES.NATIVE_SEGWIT ? rawAddress : "",
   };
-  const derived = deriveLtcAddressesFromPubkeys(pubkeysByType);
   const ltcLegacyAddr =
-    normalizeAddressInput(card?.ltcLegacyAddr) || inferred.legacy || derived.legacy;
+    normalizeAddressInput(card?.ltcLegacyAddr) || inferred.legacy;
   const ltcNestedSegwitAddr =
-    normalizeAddressInput(card?.ltcNestedSegwitAddr) ||
-    inferred.nestedSegwit ||
-    derived.nestedSegwit;
+    normalizeAddressInput(card?.ltcNestedSegwitAddr) || inferred.nestedSegwit;
   const ltcNativeSegwitAddr =
-    normalizeAddressInput(card?.ltcNativeSegwitAddr) ||
-    inferred.nativeSegwit ||
-    derived.nativeSegwit;
+    normalizeAddressInput(card?.ltcNativeSegwitAddr) || inferred.nativeSegwit;
 
   const nextType = normalizeLtcAddressType(
     preferredType ||

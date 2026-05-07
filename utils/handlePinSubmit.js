@@ -8,24 +8,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Buffer } from "buffer";
 import { bleCmd, frameBle } from "./bleProtocol";
 import { getPubkeyStorageId, getStoredPubkey } from "./pubkeyStorage";
+import { getAddressSyncRequests } from "../config/chainPrefixes";
 
 const SYNC_VERBOSE_TRANSPORT = false;
-
-const resolveAddressRequestFormat = (chainName) => {
-  const normalized = String(chainName || "").trim().toLowerCase();
-  if (normalized === "bitcoin") return "nested_segwit";
-  if (normalized === "bitcoin_cash") {
-    return "cashaddr";
-  }
-  if (normalized === "litecoin") return "nested_segwit";
-  return "";
-};
-
-const normalizeAddressRequestChainName = (chainName) => {
-  const normalized = String(chainName || "").trim().toLowerCase();
-  if (normalized === "bitcoincash") return "bitcoin_cash";
-  return normalized;
-};
 
 /**
   * Factory function generates handlePinSubmit, and all dependencies are injected through parameters.
@@ -245,8 +230,8 @@ export function createHandlePinSubmit({
         monitorVerificationCode(selectedDevice);
         // Clarify the set of address chains expected for this synchronization (can be overridden by the caller)
         try {
-          const expected = Array.from(
-            new Set(Object.values(prefixToShortName || {}))
+          const expected = getAddressSyncRequests(prefixToShortName).map(
+            (request) => request.syncKey
           );
           monitorVerificationCode?.setExpectedAddressShortNames?.(expected);
         } catch {}
@@ -281,23 +266,19 @@ export function createHandlePinSubmit({
         setVerificationStatus("waiting");
 
         // 1. Issue all address:<chainName> commands in batches
-        const sentAddressRequests = new Set();
-        for (const prefix of Object.keys(prefixToShortName)) {
-          const chainName = normalizeAddressRequestChainName(
-            prefix.replace(":", "")
-          );
-          const shortName = prefixToShortName[prefix];
-          const requestKey = `${shortName}:${chainName}`;
-          if (sentAddressRequests.has(requestKey)) continue;
-          sentAddressRequests.add(requestKey);
+        try {
+          await AsyncStorage.removeItem("bluetoothMissingChainRetryCount");
+        } catch {}
+        const addressSyncRequests = getAddressSyncRequests(prefixToShortName);
+        for (const request of addressSyncRequests) {
+          const { chainName, addrFormat, syncKey } = request;
           const getMessage =
-            bleCmd.address(chainName, resolveAddressRequestFormat(chainName)) +
-            "\r\n";
+            bleCmd.address(chainName, addrFormat) + "\r\n";
           const bufferGetMessage = Buffer.from(getMessage, "utf-8");
           const base64GetMessage = bufferGetMessage.toString("base64");
           try {
             monitorVerificationCode?.markRequestPending?.(
-              `address:${shortName}`
+              `address:${syncKey}`
             );
           } catch {}
           await selectedDevice.writeCharacteristicWithResponseForService(
@@ -327,8 +308,8 @@ export function createHandlePinSubmit({
 
           // Check the address collection of all chains
           const addresses = receivedAddresses || {};
-          const expectedShortNames = Array.from(
-            new Set(Object.values(prefixToShortName || {}))
+          const expectedShortNames = addressSyncRequests.map(
+            (request) => request.syncKey
           );
           const missingChains = expectedShortNames.filter(
             (shortName) => !addresses[shortName]
@@ -348,19 +329,13 @@ export function createHandlePinSubmit({
               }
               retryCountObj[shortName] += 1;
 
-              const prefixEntry = Object.entries(prefixToShortName).find(
-                ([k, v]) => v === shortName
+              const request = addressSyncRequests.find(
+                (item) => item.syncKey === shortName
               );
-              if (prefixEntry) {
-                const prefix = prefixEntry[0];
-                const chainName = normalizeAddressRequestChainName(
-                  prefix.replace(":", "")
-                );
+              if (request) {
+                const { chainName, addrFormat } = request;
                 const getMessage =
-                  bleCmd.address(
-                    chainName,
-                    resolveAddressRequestFormat(chainName)
-                  ) + "\r\n";
+                  bleCmd.address(chainName, addrFormat) + "\r\n";
                 const bufferGetMessage = Buffer.from(getMessage, "utf-8");
                 const base64GetMessage = bufferGetMessage.toString("base64");
                 try {

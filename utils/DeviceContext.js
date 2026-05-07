@@ -22,12 +22,12 @@ import {
 } from "./firmwareUpdateKeys";
 import { ensureCryptoCardRuntimeFields } from "./assetRuntimeFields";
 import {
+  BCH_ADDRESS_TYPES,
   buildChainAddrEntry,
   areAddressesEquivalent,
   isBchChainName,
   normalizeBchAddressType,
 } from "../config/networkUtils";
-import { getStoredPubkey } from "./pubkeyStorage";
 import {
   enrichBchAddressData,
   getBchAddressByTypeFromCard,
@@ -46,6 +46,7 @@ import {
   switchBtcAddressTypeForCard,
 } from "./btcAddress";
 import {
+  LTC_ADDRESS_TYPES,
   enrichLtcAddressData,
   getLtcAddressByTypeFromCard,
   getLtcQueryAddressesFromCard,
@@ -60,6 +61,21 @@ export const DarkModeContext = createContext();
 
 const NEW_EXCHANGE_RATE_API_URL = metricsAPII.exchangeRate;
 const HIDDEN_CHAIN_NAMES = new Set(["juno", "okb"]);
+const BTC_ADDRESS_FIELD_BY_TYPE = {
+  [BTC_ADDRESS_TYPES.LEGACY]: "btcLegacyAddr",
+  [BTC_ADDRESS_TYPES.NESTED_SEGWIT]: "btcNestedSegwitAddr",
+  [BTC_ADDRESS_TYPES.NATIVE_SEGWIT]: "btcNativeSegwitAddr",
+  [BTC_ADDRESS_TYPES.TAPROOT]: "btcTaprootAddr",
+};
+const BCH_ADDRESS_FIELD_BY_TYPE = {
+  [BCH_ADDRESS_TYPES.CASHADDR]: "bchCashAddr",
+  [BCH_ADDRESS_TYPES.LEGACY]: "bchLegacyAddr",
+};
+const LTC_ADDRESS_FIELD_BY_TYPE = {
+  [LTC_ADDRESS_TYPES.LEGACY]: "ltcLegacyAddr",
+  [LTC_ADDRESS_TYPES.NESTED_SEGWIT]: "ltcNestedSegwitAddr",
+  [LTC_ADDRESS_TYPES.NATIVE_SEGWIT]: "ltcNativeSegwitAddr",
+};
 
 const filterHiddenChains = (cards) =>
   (Array.isArray(cards) ? cards : []).filter(
@@ -168,113 +184,64 @@ export const CryptoProvider = ({ children }) => {
     return !itemQueryShort && itemShort === target && itemCoinType === "native";
   };
 
-  const loadStoredBtcPubkeys = async () => ({
-    legacy: await getStoredPubkey("bitcoin", "m/44'/0'/0'/0/0"),
-    nestedSegwit: await getStoredPubkey("bitcoin", "m/49'/0'/0'/0/0"),
-    nativeSegwit: await getStoredPubkey("bitcoin", "m/84'/0'/0'/0/0"),
-    taproot: await getStoredPubkey("bitcoin", "m/86'/0'/0'/0/0"),
-  });
-
-  const loadStoredLtcPubkeys = async () => ({
-    legacy: await getStoredPubkey("litecoin", "m/44'/2'/0'/0/0"),
-    nestedSegwit: await getStoredPubkey("litecoin", "m/49'/2'/0'/0/0"),
-    nativeSegwit: await getStoredPubkey("litecoin", "m/84'/2'/0'/0/0"),
-  });
-
   const refreshBtcAddressData = async () => {
-    try {
-      const [btcPubkeysByType, ltcPubkeysByType] = await Promise.all([
-        loadStoredBtcPubkeys(),
-        loadStoredLtcPubkeys(),
-      ]);
-      const hasAnyPubkey = [
-        ...Object.values(btcPubkeysByType),
-        ...Object.values(ltcPubkeysByType),
-      ].some(
-        (value) => String(value || "").trim() !== "",
-      );
-      if (!hasAnyPubkey) return;
-
-      setInitialAdditionalCryptos((prevCryptos) => {
-        const updatedCryptos = prevCryptos.map((crypto) =>
-          isBtcCard(crypto)
-            ? enrichBtcAddressData(
-                crypto,
-                crypto?.btcAddressType,
-                btcPubkeysByType,
-              )
-            : isLtcCard(crypto)
-              ? enrichLtcAddressData(
-                  crypto,
-                  crypto?.ltcAddressType,
-                  ltcPubkeysByType,
-                )
-              : crypto,
-        );
-        AsyncStorage.setItem(
-          "initialAdditionalCryptos",
-          JSON.stringify(updatedCryptos),
-        ).catch((error) => {
-          console.error("Failed to persist initialAdditionalCryptos:", error);
-        });
-        setAdditionalCryptos(updatedCryptos);
-        return updatedCryptos;
-      });
-
-      setCryptoCards((prevCards) => {
-        const updatedCards = prevCards.map((card) =>
-          isBtcCard(card)
-            ? ensureCryptoCardRuntimeFields(
-                enrichBtcAddressData(
-                  card,
-                  card?.btcAddressType,
-                  btcPubkeysByType,
-                ),
-              )
-            : isLtcCard(card)
-              ? ensureCryptoCardRuntimeFields(
-                  enrichLtcAddressData(
-                    card,
-                    card?.ltcAddressType,
-                    ltcPubkeysByType,
-                  ),
-                )
-              : card,
-        );
-        AsyncStorage.setItem("cryptoCards", JSON.stringify(updatedCards)).catch(
-          (error) => {
-            console.error("Failed to persist cryptoCards:", error);
-          },
-        );
-        setAddedCryptos(updatedCards);
-        AsyncStorage.setItem("addedCryptos", JSON.stringify(updatedCards)).catch(
-          (error) => {
-            console.error("Failed to persist addedCryptos:", error);
-          },
-        );
-        return updatedCards;
-      });
-    } catch (error) {
-      console.error("Failed to refresh BTC address data:", error);
-    }
+    return undefined;
   };
 
-  const updateCryptoAddress = (queryChainShortName, newAddress) => {
+  const applySyncedAddressToCard = (item, queryChainShortName, newAddress, options = {}) => {
+    const normalizedAddress = String(newAddress || "").trim();
+    const target = String(queryChainShortName || "").trim().toUpperCase();
+    if (target === "BTC") {
+      const btcAddressType = normalizeBtcAddressType(options?.btcAddressType);
+      const btcAddressField = BTC_ADDRESS_FIELD_BY_TYPE[btcAddressType];
+      const nextItem = {
+        ...item,
+        ...(btcAddressField ? { [btcAddressField]: normalizedAddress } : {}),
+      };
+      return enrichBtcAddressData(nextItem, item?.btcAddressType || btcAddressType);
+    }
+    if (target === "BCH") {
+      const bchAddressType = normalizeBchAddressType(options?.bchAddressType);
+      const bchAddressField = BCH_ADDRESS_FIELD_BY_TYPE[bchAddressType];
+      const nextItem = {
+        ...item,
+        ...(bchAddressField ? { [bchAddressField]: normalizedAddress } : {}),
+      };
+      return enrichBchAddressData(nextItem, item?.bchAddressType || bchAddressType);
+    }
+    if (target === "LTC") {
+      const ltcAddressType = normalizeLtcAddressType(options?.ltcAddressType);
+      const ltcAddressField = LTC_ADDRESS_FIELD_BY_TYPE[ltcAddressType];
+      const nextItem = {
+        ...item,
+        ...(ltcAddressField ? { [ltcAddressField]: normalizedAddress } : {}),
+      };
+      return enrichLtcAddressData(nextItem, item?.ltcAddressType || ltcAddressType);
+    }
+    return enrichLtcAddressData(
+      enrichBtcAddressData(
+        enrichBchAddressData(
+          { ...item, address: normalizedAddress },
+          item?.bchAddressType,
+        ),
+        item?.btcAddressType,
+      ),
+      item?.ltcAddressType,
+    );
+  };
+
+  const updateCryptoAddress = (queryChainShortName, newAddress, options = {}) => {
     const normalizedAddress = String(newAddress || "").trim();
     if (!normalizedAddress) return;
 
     setInitialAdditionalCryptos((prevCryptos) => {
       const updatedCryptos = prevCryptos.map((crypto) =>
         matchesAddressTarget(crypto, queryChainShortName)
-          ? enrichLtcAddressData(
-              enrichBtcAddressData(
-                enrichBchAddressData(
-                  { ...crypto, address: normalizedAddress },
-                  crypto?.bchAddressType,
-                ),
-                crypto?.btcAddressType,
-              ),
-              crypto?.ltcAddressType,
+          ? applySyncedAddressToCard(
+              crypto,
+              queryChainShortName,
+              normalizedAddress,
+              options,
             )
           : crypto
       );
@@ -291,15 +258,11 @@ export const CryptoProvider = ({ children }) => {
         const updatedCards = prevCards.map((card) =>
           matchesAddressTarget(card, queryChainShortName)
             ? ensureCryptoCardRuntimeFields(
-                enrichLtcAddressData(
-                  enrichBtcAddressData(
-                    enrichBchAddressData(
-                      { ...card, address: normalizedAddress },
-                      card?.bchAddressType,
-                    ),
-                    card?.btcAddressType,
-                  ),
-                  card?.ltcAddressType,
+                applySyncedAddressToCard(
+                  card,
+                  queryChainShortName,
+                  normalizedAddress,
+                  options,
                 ),
               )
             : card
