@@ -46,21 +46,31 @@ export const prefixToShortName = {
 
 export const ADDRESS_SYNC_FORMATS_BY_CHAIN = {
   bitcoin: [
-    { addrFormat: "legacy", syncKey: "BTC_LEGACY" },
+    { addrFormat: "legacy", syncKey: "BTC_LEGACY", optional: true },
     { addrFormat: "nested_segwit", syncKey: "BTC_NESTED_SEGWIT" },
-    { addrFormat: "native_segwit", syncKey: "BTC_NATIVE_SEGWIT" },
-    { addrFormat: "taproot", syncKey: "BTC_TAPROOT" },
+    { addrFormat: "native_segwit", syncKey: "BTC_NATIVE_SEGWIT", optional: true },
+    { addrFormat: "taproot", syncKey: "BTC_TAPROOT", optional: true },
   ],
   bitcoin_cash: [
     { addrFormat: "cashaddr", syncKey: "BCH_CASHADDR" },
-    { addrFormat: "legacy", syncKey: "BCH_LEGACY" },
+    { addrFormat: "legacy", syncKey: "BCH_LEGACY", optional: true },
   ],
   litecoin: [
-    { addrFormat: "legacy", syncKey: "LTC_LEGACY" },
+    { addrFormat: "legacy", syncKey: "LTC_LEGACY", optional: true },
     { addrFormat: "nested_segwit", syncKey: "LTC_NESTED_SEGWIT" },
-    { addrFormat: "native_segwit", syncKey: "LTC_NATIVE_SEGWIT" },
+    { addrFormat: "native_segwit", syncKey: "LTC_NATIVE_SEGWIT", optional: true },
   ],
 };
+
+export const OPTIONAL_ADDRESS_SYNC_KEYS = new Set(
+  Object.values(ADDRESS_SYNC_FORMATS_BY_CHAIN)
+    .flat()
+    .filter((format) => format.optional)
+    .map((format) => format.syncKey),
+);
+
+export const isOptionalAddressSyncKey = (key) =>
+  OPTIONAL_ADDRESS_SYNC_KEYS.has(String(key || "").trim().toUpperCase());
 
 export const normalizeAddressSyncChainName = (chainName) => {
   const normalized = String(chainName || "").trim().toLowerCase();
@@ -85,6 +95,7 @@ export const getAddressSyncRequests = (prefixMap = prefixToShortName) => {
           shortName,
           addrFormat: format.addrFormat,
           syncKey: format.syncKey,
+          optional: Boolean(format.optional),
         });
       }
       continue;
@@ -99,3 +110,6 @@ export const getAddressSyncRequests = (prefixMap = prefixToShortName) => {
 
 export const getAddressSyncKeys = (prefixMap = prefixToShortName) =>
   getAddressSyncRequests(prefixMap).map((request) => request.syncKey);
+
+export const getRequiredAddressSyncKeys = (prefixMap = prefixToShortName) =>
+  getAddressSyncKeys(prefixMap).filter((syncKey) => !isOptionalAddressSyncKey(syncKey));

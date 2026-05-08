@@ -500,27 +500,12 @@ export const CryptoProvider = ({ children }) => {
       const data = await response.json();
 
       if (data.code === 0 && data.data) {
-        const sortedRawRates = Object.keys(data.data)
-          .sort()
-          .reduce((acc, currency) => {
-            acc[currency] = data.data[currency];
-            return acc;
-          }, {});
-        console.log("[TEMP][exchangeRates] raw fiat rates:", sortedRawRates);
         const flattenedData = {};
         for (const [currency, rateArray] of Object.entries(data.data)) {
           if (Array.isArray(rateArray) && rateArray.length > 0) {
             flattenedData[currency] = rateArray[0];
           }
         }
-        const sortedRates = Object.keys(flattenedData)
-          .sort()
-          .reduce((acc, currency) => {
-            acc[currency] = flattenedData[currency];
-            return acc;
-          }, {});
-        console.log("[TEMP][exchangeRates] fetched fiat rates:", sortedRates);
-        console.log("[TEMP][exchangeRates] BHD:", flattenedData.BHD);
         setConvertRates((prev) => {
           const next = { ...prev, ...flattenedData };
           AsyncStorage.setItem("exchangeRates", JSON.stringify(next)).catch(

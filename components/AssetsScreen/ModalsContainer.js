@@ -11,7 +11,7 @@ import BluetoothModal from "../modal/BluetoothModal";
 import SecurityCodeModal from "../modal/SecurityCodeModal";
 import CheckStatusModal from "../modal/CheckStatusModal";
 import { resolveAssetIcon } from "../../utils/assetIconResolver";
-import { getAddressSyncKeys } from "../../config/chainPrefixes";
+import { getRequiredAddressSyncKeys } from "../../config/chainPrefixes";
 
 // New introduction
 import ChainSelectorModal from "../modal/ChainSelectorModal";
@@ -134,10 +134,32 @@ const ModalsContainer = ({
     (selectedCrypto && typeof selectedCrypto === "object"
       ? String(selectedCrypto.address || "").trim()
       : "");
+  const requiredAddressKeys = React.useMemo(
+    () => getRequiredAddressSyncKeys(prefixToShortName),
+    [prefixToShortName],
+  );
+  const expectedPubkeyKeys = React.useMemo(
+    () => ["cosmos", "ripple", "celestia", "osmosis", "aptos"],
+    [],
+  );
+  const syncAddressDone = requiredAddressKeys.filter((key) => {
+    const value = receivedAddresses?.[key];
+    return typeof value === "string" && value.trim().length > 0;
+  }).length;
+  const syncPubkeyDone = expectedPubkeyKeys.filter((key) => {
+    const value = receivedPubKeys?.[key];
+    return typeof value === "string" && value.trim().length > 0;
+  }).length;
+  const syncProgressTotal = requiredAddressKeys.length + expectedPubkeyKeys.length;
+  const waitingProgress =
+    syncProgressTotal > 0
+      ? Math.min(1, (syncAddressDone + syncPubkeyDone) / syncProgressTotal)
+      : 0;
   const showVerificationStatus =
     CheckStatusModalVisible && verificationStatus !== null;
   const showPendingStatus =
     !showVerificationStatus &&
+    verificationStatus !== "walletReady" &&
     (createPendingModalVisible || importingModalVisible);
   const activeStatus = showVerificationStatus
     ? verificationStatus
@@ -302,18 +324,7 @@ const ModalsContainer = ({
         }}
         progress={
           activeStatus === "waiting" && prefixToShortName
-            ? (Object.keys(receivedAddresses || {}).length +
-                Object.keys(receivedPubKeys || {}).filter((k) =>
-                  [
-                    "cosmos",
-                    "ripple",
-                    "celestia",
-                    // "juno", // Hidden for now
-                    "osmosis",
-                    "aptos",
-                  ].includes(k),
-                ).length) /
-              (getAddressSyncKeys(prefixToShortName).length + 5)
+            ? waitingProgress
             : activeStatus === "nftSaving"
               ? checkStatusProgress
               : undefined

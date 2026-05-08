@@ -33,7 +33,7 @@ import { VaultScreenStylesRoot } from "../styles/styles";
 import { ActivityScreenStylesRoot } from "../styles/styles";
 import { DeviceContext, DarkModeContext } from "../utils/DeviceContext";
 
-import { getAddressSyncKeys, prefixToShortName } from "../config/chainPrefixes";
+import { getRequiredAddressSyncKeys, prefixToShortName } from "../config/chainPrefixes";
 import { createHandlePinSubmit } from "../utils/handlePinSubmit";
 import AssetsPage from "./AssetsScreen/AssetsPage";
 import AssetsTabView from "./AssetsScreen/AssetsTabView";
@@ -1124,6 +1124,8 @@ function VaultScreen({ route, navigation }) {
 
   useEffect(() => {
     if (verificationStatus !== "walletReady") return;
+    setCreatePendingModalVisible(false);
+    setImportingModalVisible(false);
 
     const defaultCardChains = new Set(["ethereum", "bitcoin", "solana", "tron"]);
     const seededCards = (Array.isArray(initialAdditionalCryptos)
@@ -1167,7 +1169,11 @@ function VaultScreen({ route, navigation }) {
 
       return changed ? next : prev;
     });
-  }, [initialAdditionalCryptos, setCryptoCards, verificationStatus]);
+  }, [
+    initialAdditionalCryptos,
+    setCryptoCards,
+    verificationStatus,
+  ]);
 
   useEffect(() => {
     if (verificationStatus === "walletReady") {
@@ -2678,7 +2684,7 @@ function VaultScreen({ route, navigation }) {
         onSendPinFail={sendPinFailOnCancel}
         CheckStatusModalVisible={CheckStatusModalVisible}
         setCheckStatusModalVisible={setCheckStatusModalVisible}
-        missingChains={getAddressSyncKeys(prefixToShortName).filter(
+        missingChains={getRequiredAddressSyncKeys(prefixToShortName).filter(
           (shortName) => !(receivedAddresses || {})[shortName],
         )}
         receivedAddresses={receivedAddresses}

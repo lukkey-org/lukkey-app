@@ -227,7 +227,6 @@ export function createHandlePinSubmit({
 
       if (flag === "Y") {
         await tryDisconnectCurrentDevice();
-        monitorVerificationCode(selectedDevice);
         // Clarify the set of address chains expected for this synchronization (can be overridden by the caller)
         try {
           const expected = getAddressSyncRequests(prefixToShortName).map(
@@ -235,6 +234,7 @@ export function createHandlePinSubmit({
           );
           monitorVerificationCode?.setExpectedAddressShortNames?.(expected);
         } catch {}
+        monitorVerificationCode(selectedDevice);
 
         // After the listening is ready, send the accountName command and request the device to return "accountName:%s\r\n"
         try {

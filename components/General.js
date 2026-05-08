@@ -38,7 +38,7 @@ import { confirmDeleteWallet } from "../utils/confirmDeleteWallet";
 import { languages } from "../config/languages";
 import base64 from "base64-js";
 import { Buffer } from "buffer";
-import { getAddressSyncKeys, prefixToShortName } from "../config/chainPrefixes";
+import { getRequiredAddressSyncKeys, prefixToShortName } from "../config/chainPrefixes";
 import { createHandlePinSubmit } from "../utils/handlePinSubmit";
 import { parseDeviceCode } from "../utils/parseDeviceCode";
 import { bluetoothConfig } from "../env/bluetoothConfig";
@@ -1161,6 +1161,32 @@ function SecureDeviceScreen({ onDarkModeChange }) {
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const [isConfirmPasswordFocused, setIsConfirmPasswordFocused] =
     useState(false);
+  const requiredAddressKeysForModal = React.useMemo(
+    () => getRequiredAddressSyncKeys(prefixToShortName),
+    [],
+  );
+  const expectedPubkeyKeysForModal = React.useMemo(
+    () => ["cosmos", "ripple", "celestia", "osmosis", "aptos"],
+    [],
+  );
+  const syncAddressDoneForModal = requiredAddressKeysForModal.filter((key) => {
+    const value = receivedAddresses?.[key];
+    return typeof value === "string" && value.trim().length > 0;
+  }).length;
+  const syncPubkeyDoneForModal = expectedPubkeyKeysForModal.filter((key) => {
+    const value = receivedPubKeys?.[key];
+    return typeof value === "string" && value.trim().length > 0;
+  }).length;
+  const syncProgressTotalForModal =
+    requiredAddressKeysForModal.length + expectedPubkeyKeysForModal.length;
+  const waitingProgressForModal =
+    syncProgressTotalForModal > 0
+      ? Math.min(
+          1,
+          (syncAddressDoneForModal + syncPubkeyDoneForModal) /
+            syncProgressTotalForModal,
+        )
+      : 0;
 
   return (
     <LinearGradient
@@ -1449,18 +1475,7 @@ function SecureDeviceScreen({ onDarkModeChange }) {
         }}
         progress={
           verificationStatus === "waiting"
-            ? (Object.keys(receivedAddresses || {}).length +
-                Object.keys(receivedPubKeys || {}).filter((k) =>
-                  [
-                    "cosmos",
-                    "ripple",
-                    "celestia",
-                    // "juno", // Hidden for now
-                    "osmosis",
-                    "aptos",
-                  ].includes(k)
-                ).length) /
-              (getAddressSyncKeys(prefixToShortName).length + 5)
+            ? waitingProgressForModal
             : verificationStatus === "otaSending" ||
               verificationStatus === "otaInstalling"
             ? checkStatusProgress

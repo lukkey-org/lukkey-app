@@ -27,6 +27,7 @@ import {
   getLtcAddressType,
   normalizeLtcAddressType,
 } from "./ltcAddress";
+import { isOptionalAddressSyncKey } from "../config/chainPrefixes";
 import { RUNTIME_DEV } from "./runtimeFlags";
 import { getDeviceAuthKey } from "./deviceAuth";
 import { DEVICE_RESPONSES } from "./deviceProtocolConstants";
@@ -179,9 +180,14 @@ function createMonitorVerificationCode({
   onBtcPubkeySynced,
 }) {
   let monitorSubscription = null;
-  const REQUEST_TIMEOUT_MS = 12000;
+  const BASE_REQUEST_TIMEOUT_MS = 12000;
   const BLE_ACTIVITY_GRACE_MS = 4000;
-  const MAX_REQUEST_TOTAL_LIFETIME_MS = 30000;
+  const ADDRESS_SEND_INTERVAL_MS = 250;
+  const PUBKEY_SEND_INTERVAL_MS = 250;
+  const ADDRESS_RETRY_WINDOW_MS = 4500;
+  const PUBKEY_RETRY_BUFFER_MS = 3000;
+  const MIN_REQUEST_TOTAL_LIFETIME_MS = 30000;
+  const MAX_REQUEST_TOTAL_LIFETIME_MS = 90000;
   const pendingRequests = new Map();
   let syncTimeoutFired = false;
   let lastBleActivityAt = 0;
@@ -194,6 +200,7 @@ function createMonitorVerificationCode({
   let syncCompleted = false;
   let syncFinishScheduled = false;
   let currentMonitorSessionId = 0;
+  let syncUiStateVersion = 0;
   let receivedAddressesSnapshot = {};
   let receivedPubkeyChains = new Set();
   let expectedPubkeyChainsSet = null;
@@ -239,6 +246,7 @@ function createMonitorVerificationCode({
   const logSyncProgress = (label = "SYNC") => {
     try {
       const addrTotal = getExpectedAddressShortNames().length || 0;
+      const requiredAddrTotal = getRequiredAddressShortNames().length || 0;
       const pubTotal = expectedPubkeyChainsSet
         ? expectedPubkeyChainsSet.size
         : 0;
@@ -260,7 +268,7 @@ function createMonitorVerificationCode({
       const bar = `${"#".repeat(filled)}${"-".repeat(barLen - filled)}`;
       emitSyncLog({
         tag: label,
-        message: `${rounded}% [${bar}] (${done}/${total})`,
+        message: `${rounded}% [${bar}] (${done}/${total}) session=${currentMonitorSessionId} requiredAddr=${requiredAddrTotal}/${addrTotal} pub=${pubDone}/${pubTotal} name=${nameDone}`,
         color: "cyan",
         dedupeKey: `progress:${label}:${rounded}:${done}:${total}`,
         dedupeMs: 1000,
@@ -336,6 +344,17 @@ function createMonitorVerificationCode({
         .toUpperCase(),
     );
     return Array.from(new Set(fallback.filter(Boolean)));
+  };
+
+  const getRequiredAddressShortNames = () =>
+    getExpectedAddressShortNames().filter(
+      (shortName) => !isOptionalAddressSyncKey(shortName),
+    );
+
+  const logOptionalAddressMiss = (key, reason = "missing") => {
+    const shortName = String(key || "").trim().toUpperCase();
+    if (!shortName || !isOptionalAddressSyncKey(shortName)) return;
+    console.log(`[SYNC_OPTIONAL] ${reason}: ${shortName}`);
   };
 
   const buildAddressStatusLines = (receivedMap) => {
@@ -492,6 +511,33 @@ function createMonitorVerificationCode({
     if (entry?.timerId) clearTimeout(entry.timerId);
   };
 
+  const clampTimeoutMs = (value, min, max) =>
+    Math.min(max, Math.max(min, Math.ceil(Number(value) || min)));
+
+  const getExpectedPubkeyCount = () =>
+    expectedPubkeyChainsSet ? expectedPubkeyChainsSet.size : 0;
+
+  const getDynamicRequestTimeoutMs = () => {
+    const addressCount = getExpectedAddressShortNames().length;
+    const pubkeyCount = getExpectedPubkeyCount();
+    const addressStageMs =
+      addressCount * ADDRESS_SEND_INTERVAL_MS * 2 + ADDRESS_RETRY_WINDOW_MS;
+    const pubkeyStageMs =
+      pubkeyCount * PUBKEY_SEND_INTERVAL_MS * 2 + PUBKEY_RETRY_BUFFER_MS;
+    return clampTimeoutMs(
+      addressStageMs + pubkeyStageMs,
+      BASE_REQUEST_TIMEOUT_MS,
+      MAX_REQUEST_TOTAL_LIFETIME_MS,
+    );
+  };
+
+  const getDynamicRequestTotalLifetimeMs = () =>
+    clampTimeoutMs(
+      getDynamicRequestTimeoutMs() + BLE_ACTIVITY_GRACE_MS,
+      MIN_REQUEST_TOTAL_LIFETIME_MS,
+      MAX_REQUEST_TOTAL_LIFETIME_MS,
+    );
+
   const armPendingRequestTimeout = (key, entryOverrides = null) => {
     const k = String(key || "");
     if (!k) return;
@@ -506,13 +552,23 @@ function createMonitorVerificationCode({
       if (!current) return;
       const totalElapsed = Date.now() - current.firstPendingAt;
       const attemptElapsed = Date.now() - current.lastMarkedAt;
-      if (totalElapsed >= MAX_REQUEST_TOTAL_LIFETIME_MS) {
+      const maxTotalLifetimeMs = getDynamicRequestTotalLifetimeMs();
+      if (totalElapsed >= maxTotalLifetimeMs) {
         if (SYNC_DEBUG) {
           console.log("[PENDING] max total lifetime reached:", k, {
             attemptElapsed,
             totalElapsed,
+            maxTotalLifetimeMs,
             pending: Array.from(pendingRequests.keys()),
           });
+        }
+        if (k.startsWith("address:")) {
+          const addressKey = k.replace(/^address:/, "");
+          if (isOptionalAddressSyncKey(addressKey)) {
+            logOptionalAddressMiss(addressKey, "max_lifetime");
+            resolvePendingRequest(k);
+            return;
+          }
         }
         handleSyncTimeout(`request_timeout:${k}`);
         return;
@@ -539,8 +595,16 @@ function createMonitorVerificationCode({
           Array.from(pendingRequests.keys()),
         );
       }
+      if (k.startsWith("address:")) {
+        const addressKey = k.replace(/^address:/, "");
+        if (isOptionalAddressSyncKey(addressKey)) {
+          logOptionalAddressMiss(addressKey, "timeout");
+          resolvePendingRequest(k);
+          return;
+        }
+      }
       handleSyncTimeout(`request_timeout:${k}`);
-    }, REQUEST_TIMEOUT_MS);
+    }, getDynamicRequestTimeoutMs());
     pendingRequests.set(k, {
       firstPendingAt,
       lastMarkedAt,
@@ -610,6 +674,33 @@ function createMonitorVerificationCode({
     pendingRequests.clear();
   };
 
+  const invalidateWaitingStatusUpdates = () => {
+    syncUiStateVersion += 1;
+  };
+
+  const scheduleWaitingStatusUpdate = (sessionId, pendingChains) => {
+    const waitingUiStateVersion = syncUiStateVersion;
+    setTimeout(() => {
+      if (
+        !isCurrentSession(sessionId) ||
+        waitingUiStateVersion !== syncUiStateVersion ||
+        syncCompleted ||
+        syncTimeoutDisabled ||
+        walletReadyScheduled ||
+        walletReadyLogged
+      ) {
+        return;
+      }
+      setVerificationStatus((currentStatus) => {
+        if (currentStatus === "walletReady") {
+          return currentStatus;
+        }
+        return "waiting";
+      });
+      setMissingChainsForModal?.(pendingChains);
+    }, 0);
+  };
+
   let addressesReady = false;
   let pubkeysReady = false;
   let idSaved = false;
@@ -621,6 +712,7 @@ function createMonitorVerificationCode({
     if (walletReadyScheduled) return;
     const sessionId = currentMonitorSessionId;
     walletReadyScheduled = true;
+    invalidateWaitingStatusUpdates("walletReadyScheduled", sessionId);
     setTimeout(async () => {
       if (!isCurrentSession(sessionId)) {
         if (SYNC_DEBUG) {
@@ -637,12 +729,22 @@ function createMonitorVerificationCode({
         return;
       }
       syncTimeoutDisabled = true;
+      syncCompleted = true;
+      invalidateWaitingStatusUpdates("walletReady", sessionId);
       clearPendingRequests();
       setVerificationStatus("walletReady");
       if (!walletReadyLogged) {
         walletReadyLogged = true;
-        const expectedCount = getExpectedAddressShortNames().length;
-        const receivedCount = lastAddressStatusLines?.length || expectedCount;
+        const requiredAddresses = getRequiredAddressShortNames();
+        const optionalMissing = getExpectedAddressShortNames().filter(
+          (shortName) =>
+            isOptionalAddressSyncKey(shortName) &&
+            !receivedAddressesSnapshot?.[shortName],
+        );
+        const expectedCount = requiredAddresses.length;
+        const receivedCount = requiredAddresses.filter(
+          (shortName) => !!receivedAddressesSnapshot?.[shortName],
+        ).length;
         emitSyncLog({
           tag: "WALLET_READY",
           message: `addresses+pubkeys synced (${receivedCount}/${expectedCount})`,
@@ -653,6 +755,9 @@ function createMonitorVerificationCode({
           dedupeKey: `wallet_ready:${device?.id || "unknown"}`,
           dedupeMs: 10000,
         });
+        for (const shortName of optionalMissing) {
+          logOptionalAddressMiss(shortName, "not_supported_or_missing");
+        }
       }
       if (lastAddressStatusLines?.length) {
         scheduleAddressStatusLog(
@@ -776,6 +881,8 @@ function createMonitorVerificationCode({
       if (syncFinishScheduled) return;
       if (addressesReady && pubkeysReady && idSaved && statusSaved) {
         syncCompleted = true;
+        syncTimeoutDisabled = true;
+        invalidateWaitingStatusUpdates("syncDone", currentMonitorSessionId);
         syncFinishScheduled = true;
         setTimeout(async () => {
           if (disconnectedOnce) return;
@@ -856,6 +963,7 @@ function createMonitorVerificationCode({
   function monitorVerificationCode(device, sendparseDeviceCodeedValue) {
     const sessionId = ++currentMonitorSessionId;
     clearPendingRequests();
+    invalidateWaitingStatusUpdates("monitorStart", sessionId);
     syncTimeoutFired = false;
     suppressDisconnectError = false;
     syncCompleted = false;
@@ -915,6 +1023,7 @@ function createMonitorVerificationCode({
           suppressDisconnectError ||
           syncCompleted ||
           syncTimeoutDisabled ||
+          walletReadyScheduled ||
           walletReadyLogged
         )
           return;
@@ -1172,16 +1281,30 @@ function createMonitorVerificationCode({
           };
           checkReadyFromSnapshots(device);
 
+          if (
+            syncCompleted ||
+            syncTimeoutDisabled ||
+            walletReadyScheduled ||
+            walletReadyLogged
+          ) {
+            continue;
+          }
+
           let nextActionType = null;
           let nextMissingChains = [];
           let nextAddressStatusLines = null;
           setReceivedAddresses((prev) => {
             const updated = { ...prev, [syncKey]: newAddress };
-            const expectedList = getExpectedAddressShortNames();
+            const expectedList = getRequiredAddressShortNames();
             const expectedCount = expectedList.length;
 
             nextAddressStatusLines = buildAddressStatusLines(updated);
-            if (Object.keys(updated).length >= expectedCount) {
+            if (
+              expectedCount > 0 &&
+              expectedList.every((shortName) =>
+                Object.prototype.hasOwnProperty.call(updated, shortName),
+              )
+            ) {
               nextActionType = "addressesReady";
               nextMissingChains = [];
             } else {
@@ -1204,11 +1327,7 @@ function createMonitorVerificationCode({
             tryScheduleWalletReady(device);
           } else if (nextActionType === "waiting") {
             const pendingChains = nextMissingChains || [];
-
-            setTimeout(() => {
-              setVerificationStatus("waiting");
-              setMissingChainsForModal?.(pendingChains);
-            }, 0);
+            scheduleWaitingStatusUpdate(sessionId, pendingChains);
           }
         }
 
@@ -1688,15 +1807,24 @@ function createMonitorVerificationCode({
   }
 
   async function handleSyncTimeout(reason) {
-    if (syncTimeoutDisabled || walletReadyLogged) {
+    if (
+      syncTimeoutDisabled ||
+      syncCompleted ||
+      walletReadyScheduled ||
+      walletReadyLogged
+    ) {
       console.log("[SYNC_TIMEOUT] ignored after walletReady:", reason);
       return;
     }
     if (syncTimeoutFired) return;
     syncTimeoutFired = true;
+    invalidateWaitingStatusUpdates(
+      `syncTimeout:${reason}`,
+      currentMonitorSessionId,
+    );
     console.log("[SYNC_TIMEOUT] fired:", reason);
     try {
-      const expectedAddresses = getExpectedAddressShortNames();
+      const expectedAddresses = getRequiredAddressShortNames();
       const missingAddresses = expectedAddresses.filter(
         (shortName) => !receivedAddressesSnapshot?.[shortName],
       );
@@ -1705,6 +1833,16 @@ function createMonitorVerificationCode({
         for (const shortName of missingAddresses) {
           console.log(`❌ ${shortName}`);
         }
+      }
+    } catch {}
+    try {
+      const optionalMissingAddresses = getExpectedAddressShortNames().filter(
+        (shortName) =>
+          isOptionalAddressSyncKey(shortName) &&
+          !receivedAddressesSnapshot?.[shortName],
+      );
+      for (const shortName of optionalMissingAddresses) {
+        logOptionalAddressMiss(shortName, "not_supported_or_missing");
       }
     } catch {}
     try {
