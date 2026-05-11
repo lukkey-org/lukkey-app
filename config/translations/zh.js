@@ -17,6 +17,8 @@ export const zh = {
       "在 LUKKEY 硬件中未找到资产账户",
     "Please create or import an asset account in your LUKKEY hardware device.":
       "请在您的 LUKKEY 硬件设备中创建或导入资产账户。",
+    "Authentic device": "已验证为 LUKKEY 正品设备",
+    "Unknown device": "无法验证为 LUKKEY 正品设备",
     Synchronized: "已同步",
     "Verification successful!": "验证成功！",
     "You can now safely use the device.": "您现在可以安全地使用该设备。",

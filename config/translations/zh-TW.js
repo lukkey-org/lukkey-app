@@ -15,6 +15,8 @@ export const zhTW = {
     "Estimated remaining: {{time}}": "預計剩餘：{{time}}",
     "No asset account found in LUKKEY hardware": "在LUKKEY硬件中未找到資產帳戶",
     "Please create or import an asset account in your LUKKEY hardware device.": "請在您的LUKKEY硬件設備中創建或導入資產帳戶。",
+    "Authentic device": "已驗證為 LUKKEY 正品設備",
+    "Unknown device": "無法驗證為 LUKKEY 正品設備",
     "Synchronized": "已同步",
     "Verification successful!": "驗證成功！",
     "You can now safely use the device.": "您現在可以安全地使用該設備。",

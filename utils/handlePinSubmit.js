@@ -53,6 +53,7 @@ export function createHandlePinSubmit({
   bleManagerRef,
   attemptDisconnectCurrentDevice,
   openExclusiveModal,
+  getCurrentVerificationStatus,
 }) {
   /**
    * @param {Object} params
@@ -144,6 +145,10 @@ export function createHandlePinSubmit({
     }
 
     if (pinCodeValue === receivedPin) {
+      const authStatusBeforePin =
+        typeof getCurrentVerificationStatus === "function"
+          ? getCurrentVerificationStatus()
+          : null;
       setSecurityCodeModalVisible(false);
       setVerificationStatus("success");
       // Defer persistence of verifiedDevices to walletReady (implemented within monitorVerificationCode)
@@ -495,7 +500,11 @@ export function createHandlePinSubmit({
         } else {
           setCheckStatusModalVisible(true);
         }
-        setVerificationStatus("noWalletInHardware");
+        setVerificationStatus(
+          authStatusBeforePin === "VALID"
+            ? "noWalletInHardwareAuthentic"
+            : "noWalletInHardwareUnknown",
+        );
 
         // When Flag is "N": cancel the subscription first and then disconnect the device
         try {

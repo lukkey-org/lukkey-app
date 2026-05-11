@@ -13,6 +13,7 @@ import {
   TouchableWithoutFeedback,
   ScrollView,
   Pressable,
+  Image,
   StyleSheet,
   Animated,
   Easing,
@@ -21,6 +22,7 @@ import { BlurView } from "../common/AppBlurView";
 import { useTranslation } from "react-i18next";
 import SuccessGif from "../../assets/animations/Success.webp";
 import FailGif from "../../assets/animations/Fail.webp";
+import EmptyGif from "../../assets/animations/Empty.webp";
 import PendingGifLight from "../../assets/animations/pendingLight.webp";
 import PendingGifDark from "../../assets/animations/pendingDark.webp";
 import { DarkModeContext } from "../../utils/DeviceContext";
@@ -135,9 +137,57 @@ const FirmwareUpdateSkeleton = ({ isDarkMode }) => {
   );
 };
 
+const noWalletStyles = StyleSheet.create({
+  content: {
+    width: "100%",
+    alignItems: "center",
+  },
+  titleStage: {
+    width: "100%",
+    minHeight: 52,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  finalTitle: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+  },
+  emptyImage: {
+    width: 220,
+    height: 245,
+    marginTop: 14,
+  },
+  authSlot: {
+    width: "100%",
+    height: 56,
+    marginTop: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "visible",
+  },
+  authCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+  },
+  authImageWrap: {
+    marginRight: 12,
+  },
+  authImage: {
+    width: 48,
+    height: 48,
+    resizeMode: "contain",
+  },
+  authTitleWrap: {
+    flexShrink: 1,
+  },
+});
+
 const CheckStatusModal = ({
   visible,
-  status,
+  status: statusProp,
   missingChains = [],
   onClose,
   setVerificationStatus,
@@ -161,6 +211,7 @@ const CheckStatusModal = ({
     Constants?.expoConfig?.extra?.appVersion ||
     Constants?.manifest?.extra?.appVersion ||
     "-";
+  const status = statusProp;
   let imageSource;
   let title;
   let subtitle;
@@ -175,6 +226,15 @@ const CheckStatusModal = ({
     status === "nftSaving" ||
     status === "otaSending" ||
     status === "otaInstalling";
+  const isNoWalletStatus =
+    status === "noWalletInHardware" ||
+    status === "noWalletInHardwareAuthentic" ||
+    status === "noWalletInHardwareUnknown";
+  const isNoWalletAuthentic = status === "noWalletInHardwareAuthentic";
+  const noWalletTransition = useRef(new Animated.Value(0)).current;
+  const noWalletEmptyOpacity = useRef(new Animated.Value(0)).current;
+  const noWalletIntroTitleOpacity = useRef(new Animated.Value(1)).current;
+  const noWalletSubtitleShake = useRef(new Animated.Value(0)).current;
 
   // Progress - remaining time estimate (only for OTA sending phase)
   const [etaSec, setEtaSec] = useState(null);
@@ -517,7 +577,7 @@ const CheckStatusModal = ({
     imageSource = FailGif;
     title = t("NFT sending canceled");
     subtitle = t("You canceled the NFT transfer.");
-  } else if (status === "noWalletInHardware") {
+  } else if (isNoWalletStatus) {
     imageSource = FailGif;
     title = t("No asset account found in LUKKEY hardware");
     subtitle = t(
@@ -553,7 +613,157 @@ const CheckStatusModal = ({
   const [copyToastVisible, setCopyToastVisible] = useState(false);
   const [copyToastMessage, setCopyToastMessage] = useState("");
   const [copyToastKey, setCopyToastKey] = useState(0);
+  const [shouldRenderNoWalletEmpty, setShouldRenderNoWalletEmpty] =
+    useState(false);
+  const [noWalletLayout, setNoWalletLayout] = useState({
+    authSlot: null,
+    closeTop: null,
+    title: null,
+  });
 
+  const updateNoWalletLayout = (key, value) => {
+    setNoWalletLayout((prev) => {
+      const current = prev[key];
+      if (
+        current &&
+        Math.abs((current.y || 0) - (value.y || 0)) < 0.5 &&
+        Math.abs((current.height || 0) - (value.height || 0)) < 0.5
+      ) {
+        return prev;
+      }
+      return { ...prev, [key]: value };
+    });
+  };
+
+  useEffect(() => {
+    noWalletTransition.stopAnimation();
+    noWalletEmptyOpacity.stopAnimation();
+    noWalletIntroTitleOpacity.stopAnimation();
+    noWalletSubtitleShake.stopAnimation();
+    if (visible && isNoWalletStatus) {
+      noWalletTransition.setValue(0);
+      noWalletEmptyOpacity.setValue(0);
+      noWalletIntroTitleOpacity.setValue(1);
+      noWalletSubtitleShake.setValue(0);
+      setShouldRenderNoWalletEmpty(false);
+      const animation = Animated.sequence([
+        Animated.delay(1800),
+        Animated.timing(noWalletIntroTitleOpacity, {
+          toValue: 0,
+          duration: 180,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(noWalletTransition, {
+          toValue: 1,
+          duration: 620,
+          easing: Easing.bezier(0.2, 0, 0, 1),
+          useNativeDriver: true,
+        }),
+        Animated.timing(noWalletEmptyOpacity, {
+          toValue: 0.001,
+          duration: 1,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        Animated.timing(noWalletEmptyOpacity, {
+          toValue: 1,
+          duration: 260,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.sequence([
+          Animated.timing(noWalletSubtitleShake, {
+            toValue: 1,
+            duration: 55,
+            easing: Easing.linear,
+            useNativeDriver: true,
+          }),
+          Animated.timing(noWalletSubtitleShake, {
+            toValue: -1,
+            duration: 70,
+            easing: Easing.linear,
+            useNativeDriver: true,
+          }),
+          Animated.timing(noWalletSubtitleShake, {
+            toValue: 0.6,
+            duration: 60,
+            easing: Easing.linear,
+            useNativeDriver: true,
+          }),
+          Animated.timing(noWalletSubtitleShake, {
+            toValue: 0,
+            duration: 70,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+        ]),
+      ]);
+      animation.start();
+      const renderTimer = setTimeout(() => {
+        setShouldRenderNoWalletEmpty(true);
+      }, 1800 + 180 + 620);
+      return () => {
+        clearTimeout(renderTimer);
+        animation.stop();
+      };
+    }
+    noWalletTransition.setValue(0);
+    noWalletEmptyOpacity.setValue(0);
+    noWalletIntroTitleOpacity.setValue(1);
+    noWalletSubtitleShake.setValue(0);
+    setShouldRenderNoWalletEmpty(false);
+    return undefined;
+  }, [
+    isNoWalletStatus,
+    noWalletEmptyOpacity,
+    noWalletIntroTitleOpacity,
+    noWalletSubtitleShake,
+    noWalletTransition,
+    visible,
+  ]);
+
+  const noWalletAuthTitle = isNoWalletAuthentic
+    ? t("Authentic device")
+    : t("Unknown device");
+  const noWalletAuthImageSource = isNoWalletAuthentic
+    ? require("../../assets/branding/AuthenticShield.png")
+    : require("../../assets/branding/UnknownShield.png");
+  const noWalletAuthColor = isNoWalletAuthentic
+    ? isDarkMode
+      ? "#E4C98F"
+      : "#B67B52"
+    : "#FFFFFF";
+  const noWalletInitialTranslateY = (() => {
+    const title = noWalletLayout.title;
+    const authSlot = noWalletLayout.authSlot;
+    const closeTop = noWalletLayout.closeTop?.y;
+    if (!title || !authSlot || typeof closeTop !== "number") return -74;
+    const titleBottom = title.y + title.height;
+    const authCenter = authSlot.y + authSlot.height / 2;
+    const availableCenter = titleBottom + (closeTop - titleBottom) / 2;
+    return availableCenter - authCenter - 12;
+  })();
+  const noWalletAuthTranslateY = noWalletTransition.interpolate({
+    inputRange: [0, 1],
+    outputRange: [noWalletInitialTranslateY, 0],
+  });
+  const noWalletAuthTranslateX = noWalletTransition.interpolate({
+    inputRange: [0, 1],
+    outputRange: [130, 0],
+  });
+  const noWalletAuthScale = noWalletTransition.interpolate({
+    inputRange: [0, 1],
+    outputRange: [3.75, 1],
+  });
+  const noWalletContentTranslateY = noWalletTransition.interpolate({
+    inputRange: [0, 1],
+    outputRange: [12, 0],
+  });
+  const noWalletSubtitleTranslateX = noWalletSubtitleShake.interpolate({
+    inputRange: [-1, 0, 1],
+    outputRange: [-7, 0, 7],
+  });
   return (
     <Modal
       animationType="fade"
@@ -599,26 +809,142 @@ const CheckStatusModal = ({
           ]}
           onStartShouldSetResponder={() => true}
         >
-          {imageSource ? (
-            <AnimatedWebP
-              key={status}
-              source={imageSource}
-              style={{ width: 120, height: 120 }}
-              contentFit="contain"
-            />
-          ) : null}
-          <Text
-            style={[
-              styles.modalTitle,
-              {
-                textAlign: "center",
-                width: "100%",
-                marginBottom: isFirmwareUpdateSummary ? 6 : 0,
-              },
-            ]}
-          >
-            {title}
-          </Text>
+          {isNoWalletStatus ? (
+            <View style={noWalletStyles.content}>
+              <View
+                style={noWalletStyles.titleStage}
+                onLayout={(event) =>
+                  updateNoWalletLayout("title", event.nativeEvent.layout)
+                }
+              >
+                <Animated.Text
+                  style={[
+                    styles.modalTitle,
+                    {
+                      color: noWalletAuthColor,
+                      opacity: noWalletIntroTitleOpacity,
+                      textAlign: "center",
+                      width: "100%",
+                    },
+                  ]}
+                >
+                  {noWalletAuthTitle}
+                </Animated.Text>
+                <Animated.Text
+                  style={[
+                    styles.modalTitle,
+                    noWalletStyles.finalTitle,
+                    {
+                      opacity: noWalletEmptyOpacity,
+                      textAlign: "center",
+                      width: "100%",
+                    },
+                  ]}
+                >
+                  {title}
+                </Animated.Text>
+              </View>
+              <Animated.View
+                style={[
+                  {
+                    opacity: noWalletEmptyOpacity,
+                    transform: [{ translateY: noWalletContentTranslateY }],
+                  },
+                ]}
+              >
+                {shouldRenderNoWalletEmpty ? (
+                  <AnimatedWebP
+                    key={`empty-wallet-${status}`}
+                    source={EmptyGif}
+                    style={noWalletStyles.emptyImage}
+                    contentFit="contain"
+                  />
+                ) : (
+                  <View style={noWalletStyles.emptyImage} />
+                )}
+              </Animated.View>
+              <View
+                style={noWalletStyles.authSlot}
+                onLayout={(event) =>
+                  updateNoWalletLayout("authSlot", event.nativeEvent.layout)
+                }
+              >
+                <View style={noWalletStyles.authCard}>
+                  <Animated.View
+                    style={[
+                      noWalletStyles.authImageWrap,
+                      {
+                        transform: [
+                          { translateX: noWalletAuthTranslateX },
+                          { translateY: noWalletAuthTranslateY },
+                          { scale: noWalletAuthScale },
+                        ],
+                      },
+                    ]}
+                  >
+                    <Image
+                      source={noWalletAuthImageSource}
+                      style={noWalletStyles.authImage}
+                    />
+                  </Animated.View>
+                  <Animated.Text
+                    style={[
+                      styles.modalTitle,
+                      noWalletStyles.authTitleWrap,
+                      {
+                        color: noWalletAuthColor,
+                        opacity: noWalletEmptyOpacity,
+                        textAlign: "left",
+                      },
+                    ]}
+                  >
+                    {noWalletAuthTitle}
+                  </Animated.Text>
+                </View>
+              </View>
+              <Animated.View
+                style={{
+                  opacity: noWalletEmptyOpacity,
+                  transform: [
+                    { translateY: noWalletContentTranslateY },
+                    { translateX: noWalletSubtitleTranslateX },
+                  ],
+                }}
+              >
+                {hasSubtitle ? (
+                  <Text
+                    style={[
+                      styles.modalSubtitle,
+                      { color: "#FF5252", marginTop: 16 },
+                    ]}
+                  >
+                    {subtitle}
+                  </Text>
+                ) : null}
+              </Animated.View>
+            </View>
+          ) : (
+            <>
+              {imageSource ? (
+                <AnimatedWebP
+                  key={status}
+                  source={imageSource}
+                  style={{ width: 120, height: 120 }}
+                  contentFit="contain"
+                />
+              ) : null}
+              <Text
+                style={[
+                  styles.modalTitle,
+                  {
+                    textAlign: "center",
+                    width: "100%",
+                    marginBottom: isFirmwareUpdateSummary ? 6 : 0,
+                  },
+                ]}
+              >
+                {title}
+              </Text>
           {(status === "waiting" ||
             status === "nftSaving" ||
             status === "otaSending" ||
@@ -1008,6 +1334,8 @@ const CheckStatusModal = ({
               </Text>
             </View>
           )}
+            </>
+          )}
 
           {shouldShowCloseButton ? (
             <TouchableOpacity
@@ -1023,6 +1351,11 @@ const CheckStatusModal = ({
               onPress={() => {
                 if (setVerificationStatus) setVerificationStatus(null);
                 if (onClose) onClose();
+              }}
+              onLayout={(event) => {
+                if (isNoWalletStatus) {
+                  updateNoWalletLayout("closeTop", event.nativeEvent.layout);
+                }
               }}
             >
               <Text style={styles.cancelButtonText}>{t("Close")}</Text>

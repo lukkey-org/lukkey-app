@@ -816,6 +816,7 @@ function SecureDeviceScreen({ onDarkModeChange }) {
         bleManagerRef,
         attemptDisconnectCurrentDevice: true,
         openExclusiveModal,
+        getCurrentVerificationStatus: () => verificationStatus,
         debugSource: "SecureDevice",
       }),
     [
@@ -835,6 +836,7 @@ function SecureDeviceScreen({ onDarkModeChange }) {
       devices,
       bleManagerRef,
       openExclusiveModal,
+      verificationStatus,
     ]
   );
 

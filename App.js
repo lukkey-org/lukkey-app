@@ -800,6 +800,7 @@ function AppContent({
         serviceUUID,
         writeCharacteristicUUID,
         openExclusiveModal,
+        getCurrentVerificationStatus: () => verificationStatus,
         debugSource: "App",
       }),
     [
@@ -816,6 +817,7 @@ function AppContent({
       serviceUUID,
       writeCharacteristicUUID,
       openExclusiveModal,
+      verificationStatus,
     ],
   );
 

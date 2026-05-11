@@ -1752,6 +1752,7 @@ function VaultScreen({ route, navigation }) {
         serviceUUID,
         writeCharacteristicUUID,
         openExclusiveModal,
+        getCurrentVerificationStatus: () => verificationStatus,
         debugSource: "Vault",
       }),
     [
@@ -1768,6 +1769,7 @@ function VaultScreen({ route, navigation }) {
       serviceUUID,
       writeCharacteristicUUID,
       openExclusiveModal,
+      verificationStatus,
     ],
   );
 

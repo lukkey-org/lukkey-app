@@ -309,6 +309,7 @@ const ModalsContainer = ({
       <CheckStatusModal
         visible={showVerificationStatus || showPendingStatus}
         status={activeStatus}
+        setVerificationStatus={setVerificationStatus}
         missingChains={missingChains}
         onClose={() => {
           if (showPendingStatus) {

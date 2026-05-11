@@ -17,6 +17,8 @@ export const en = {
       "No asset account found in LUKKEY hardware",
     "Please create or import an asset account in your LUKKEY hardware device.":
       "Please create or import an asset account in your LUKKEY hardware device.",
+    "Authentic device": "Verified authentic LUKKEY device",
+    "Unknown device": "Unable to verify this as an authentic LUKKEY device",
     Synchronized: "Synchronized",
     "Verification successful!": "Verification successful!",
     "You can now safely use the device.": "You can now safely use the device.",

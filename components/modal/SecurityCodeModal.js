@@ -489,7 +489,7 @@ const SecurityCodeModal = ({
               <View style={{ flexDirection: "row", alignItems: "center" }}>
                 {status === "VALID" && (
                   <Image
-                    source={require("../../assets/branding/Authentic.webp")}
+                    source={require("../../assets/branding/AuthenticShield.png")}
                     style={{
                       width: 40,
                       height: 40,
