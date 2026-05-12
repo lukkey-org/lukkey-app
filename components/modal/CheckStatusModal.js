@@ -616,6 +616,7 @@ const CheckStatusModal = ({
   const [shouldRenderNoWalletEmpty, setShouldRenderNoWalletEmpty] =
     useState(false);
   const [noWalletLayout, setNoWalletLayout] = useState({
+    authImage: null,
     authSlot: null,
     closeTop: null,
     title: null,
@@ -626,7 +627,9 @@ const CheckStatusModal = ({
       const current = prev[key];
       if (
         current &&
+        Math.abs((current.x || 0) - (value.x || 0)) < 0.5 &&
         Math.abs((current.y || 0) - (value.y || 0)) < 0.5 &&
+        Math.abs((current.width || 0) - (value.width || 0)) < 0.5 &&
         Math.abs((current.height || 0) - (value.height || 0)) < 0.5
       ) {
         return prev;
@@ -748,9 +751,17 @@ const CheckStatusModal = ({
     inputRange: [0, 1],
     outputRange: [noWalletInitialTranslateY, 0],
   });
+  const noWalletInitialTranslateX = (() => {
+    const authSlot = noWalletLayout.authSlot;
+    const authImage = noWalletLayout.authImage;
+    if (!authSlot || !authImage) return 0;
+    const slotCenter = authSlot.width / 2;
+    const imageCenter = authImage.x + authImage.width / 2;
+    return slotCenter - imageCenter;
+  })();
   const noWalletAuthTranslateX = noWalletTransition.interpolate({
     inputRange: [0, 1],
-    outputRange: [130, 0],
+    outputRange: [noWalletInitialTranslateX, 0],
   });
   const noWalletAuthScale = noWalletTransition.interpolate({
     inputRange: [0, 1],
@@ -871,6 +882,12 @@ const CheckStatusModal = ({
               >
                 <View style={noWalletStyles.authCard}>
                   <Animated.View
+                    onLayout={(event) =>
+                      updateNoWalletLayout(
+                        "authImage",
+                        event.nativeEvent.layout,
+                      )
+                    }
                     style={[
                       noWalletStyles.authImageWrap,
                       {
