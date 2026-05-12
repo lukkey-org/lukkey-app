@@ -15,7 +15,9 @@ export const bn = {
     "Estimated remaining: {{time}}": "আনুমানিক অবশিষ্ট সময়: {{time}}",
     "No asset account found in LUKKEY hardware": "LUKKEY হার্ডওয়্যারে কোনো সম্পদ অ্যাকাউন্ট পাওয়া যায়নি",
     "Please create or import an asset account in your LUKKEY hardware device.": "অনুগ্রহ করে আপনার LUKKEY হার্ডওয়্যার ডিভাইসে একটি সম্পদ অ্যাকাউন্ট তৈরি করুন বা ইমপোর্ট করুন।",
-    "Synchronized": "সিঙ্ক্রোনাইজড",
+
+    "Authentic device": "ডিভাইসটি আসল",
+    "Unknown device": "এটি আসল LUKKEY ডিভাইস কিনা যাচাই করা যায়নি",    "Synchronized": "সিঙ্ক্রোনাইজড",
     "Verification successful!": "যাচাইকরণ সফল হয়েছে!",
     "You can now safely use the device.": "আপনি এখন নিরাপদে ডিভাইসটি ব্যবহার করতে পারেন।",
     "Wallet ready!": "ওয়ালেট প্রস্তুত!",

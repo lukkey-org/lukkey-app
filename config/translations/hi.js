@@ -15,7 +15,9 @@ export const hi = {
     "Estimated remaining: {{time}}": "अनुमानित शेष समय: {{time}}",
     "No asset account found in LUKKEY hardware": "LUKKEY हार्डवेयर में कोई एसेट अकाउंट नहीं मिला",
     "Please create or import an asset account in your LUKKEY hardware device.": "कृपया अपने LUKKEY हार्डवेयर डिवाइस में एक एसेट अकाउंट बनाएं या इम्पोर्ट करें।",
-    "Synchronized": "सिंक्रनाइज़ किया गया",
+
+    "Authentic device": "प्रामाणिक डिवाइस",
+    "Unknown device": "इसे प्रामाणिक LUKKEY डिवाइस के रूप में सत्यापित नहीं किया जा सका",    "Synchronized": "सिंक्रनाइज़ किया गया",
     "Verification successful!": "सत्यापन सफल!",
     "You can now safely use the device.": "अब आप डिवाइस का सुरक्षित रूप से उपयोग कर सकते हैं।",
     "Wallet ready!": "वॉलेट तैयार है!",

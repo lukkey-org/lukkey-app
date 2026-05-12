@@ -15,7 +15,9 @@ export const th = {
     "Estimated remaining: {{time}}": "เวลาโดยประมาณที่เหลือ: {{time}}",
     "No asset account found in LUKKEY hardware": "ไม่พบบัญชีสินทรัพย์ในฮาร์ดแวร์ LUKKEY",
     "Please create or import an asset account in your LUKKEY hardware device.": "กรุณาสร้างหรือนำเข้าบัญชีสินทรัพย์ในอุปกรณ์ฮาร์ดแวร์ LUKKEY ของคุณ",
-    "Synchronized": "ซิงโครไนซ์แล้ว",
+
+    "Authentic device": "อุปกรณ์แท้",
+    "Unknown device": "ไม่สามารถยืนยันได้ว่าอุปกรณ์นี้เป็นอุปกรณ์ LUKKEY ของแท้",    "Synchronized": "ซิงโครไนซ์แล้ว",
     "Verification successful!": "การยืนยันสำเร็จ!",
     "You can now safely use the device.": "คุณสามารถใช้อุปกรณ์ได้อย่างปลอดภัยแล้ว",
     "Wallet ready!": "กระเป๋าเงินพร้อมแล้ว!",

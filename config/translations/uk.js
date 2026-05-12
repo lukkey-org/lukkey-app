@@ -15,7 +15,9 @@ export const uk = {
     "Estimated remaining: {{time}}": "Орієнтовний час, що залишився: {{time}}",
     "No asset account found in LUKKEY hardware": "У пристрої LUKKEY не знайдено обліковий запис активів",
     "Please create or import an asset account in your LUKKEY hardware device.": "Будь ласка, створіть або імпортуйте обліковий запис активів у ваш пристрій LUKKEY.",
-    "Synchronized": "Синхронізовано",
+
+    "Authentic device": "Справжній пристрій",
+    "Unknown device": "Не вдалося підтвердити, що це справжній пристрій LUKKEY",    "Synchronized": "Синхронізовано",
     "Verification successful!": "Перевірка пройшла успішно!",
     "You can now safely use the device.": "Тепер ви можете безпечно користуватися пристроєм.",
     "Wallet ready!": "Гаманець готовий!",

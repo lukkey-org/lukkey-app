@@ -15,7 +15,9 @@ export const ko = {
     "Estimated remaining: {{time}}": "예상 남은 시간: {{time}}",
     "No asset account found in LUKKEY hardware": "LUKKEY 하드웨어에서 자산 계정을 찾을 수 없습니다",
     "Please create or import an asset account in your LUKKEY hardware device.": "LUKKEY 하드웨어 기기에서 자산 계정을 생성하거나 복원하세요.",
-    "Synchronized": "동기화됨",
+
+    "Authentic device": "정품 디바이스",
+    "Unknown device": "이 기기를 정품 LUKKEY 기기로 확인할 수 없습니다",    "Synchronized": "동기화됨",
     "Verification successful!": "검증에 성공했습니다!",
     "You can now safely use the device.": "이제 기기를 안전하게 사용할 수 있습니다.",
     "Wallet ready!": "지갑 준비 완료!",

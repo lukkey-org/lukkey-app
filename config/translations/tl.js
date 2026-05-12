@@ -15,7 +15,9 @@ export const tl = {
     "Estimated remaining: {{time}}": "Tinatayang natitirang oras: {{time}}",
     "No asset account found in LUKKEY hardware": "Walang nakitang asset account sa LUKKEY hardware",
     "Please create or import an asset account in your LUKKEY hardware device.": "Mangyaring gumawa o mag-import ng asset account sa iyong LUKKEY hardware device.",
-    "Synchronized": "Nakasabay",
+
+    "Authentic device": "Tunay na device",
+    "Unknown device": "Hindi ma-verify na tunay na LUKKEY device ito",    "Synchronized": "Nakasabay",
     "Verification successful!": "Matagumpay ang beripikasyon!",
     "You can now safely use the device.": "Maaari mo nang ligtas na gamitin ang device.",
     "Wallet ready!": "Handa na ang pitaka!",

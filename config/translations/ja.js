@@ -15,7 +15,9 @@ export const ja = {
     "Estimated remaining: {{time}}": "推定残り時間: {{time}}",
     "No asset account found in LUKKEY hardware": "LUKKEY ハードウェアに資産アカウントが見つかりません",
     "Please create or import an asset account in your LUKKEY hardware device.": "LUKKEY ハードウェアデバイスに資産アカウントを作成またはインポートしてください。",
-    "Synchronized": "同期済み",
+
+    "Authentic device": "正規デバイス",
+    "Unknown device": "このデバイスが正規の LUKKEY デバイスであることを確認できません",    "Synchronized": "同期済み",
     "Verification successful!": "検証に成功しました！",
     "You can now safely use the device.": "これで安全にデバイスを使用できます。",
     "Wallet ready!": "ウォレットの準備ができました！",

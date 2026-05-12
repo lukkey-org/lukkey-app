@@ -15,7 +15,9 @@ export const ru = {
     "Estimated remaining: {{time}}": "Оставшееся время (оценка): {{time}}",
     "No asset account found in LUKKEY hardware": "В оборудовании LUKKEY не найден аккаунт актива",
     "Please create or import an asset account in your LUKKEY hardware device.": "Пожалуйста, создайте или импортируйте аккаунт актива в ваше устройство LUKKEY.",
-    "Synchronized": "Синхронизировано",
+
+    "Authentic device": "Подлинное устройство",
+    "Unknown device": "Не удалось подтвердить, что это подлинное устройство LUKKEY",    "Synchronized": "Синхронизировано",
     "Verification successful!": "Проверка прошла успешно!",
     "You can now safely use the device.": "Теперь вы можете безопасно использовать устройство.",
     "Wallet ready!": "Кошелек готов!",

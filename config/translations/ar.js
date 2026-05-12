@@ -19,6 +19,8 @@ export const ar = {
       "لم يتم العثور على حساب أصول في جهاز LUKKEY",
     "Please create or import an asset account in your LUKKEY hardware device.":
       "يرجى إنشاء أو استيراد حساب أصول في جهاز LUKKEY الخاص بك.",
+    "Authentic device": "جهاز أصلي",
+    "Unknown device": "تعذّر التحقق من أن هذا جهاز LUKKEY أصلي",
     Synchronized: "متزامن",
     "Verification successful!": "تم التحقق بنجاح!",
     "You can now safely use the device.": "يمكنك الآن استخدام الجهاز بأمان.",

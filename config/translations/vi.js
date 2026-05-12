@@ -15,7 +15,9 @@ export const vi = {
     "Estimated remaining: {{time}}": "Thời gian còn lại ước tính: {{time}}",
     "No asset account found in LUKKEY hardware": "Không tìm thấy tài khoản tài sản trong phần cứng LUKKEY",
     "Please create or import an asset account in your LUKKEY hardware device.": "Vui lòng tạo hoặc nhập tài khoản tài sản vào thiết bị phần cứng LUKKEY của bạn.",
-    "Synchronized": "Đã đồng bộ hóa",
+
+    "Authentic device": "Thiết bị chính hãng",
+    "Unknown device": "Không thể xác minh đây là thiết bị LUKKEY chính hãng",    "Synchronized": "Đã đồng bộ hóa",
     "Verification successful!": "Xác minh thành công!",
     "You can now safely use the device.": "Bây giờ bạn có thể sử dụng thiết bị một cách an toàn.",
     "Wallet ready!": "Ví đã sẵn sàng!",

@@ -15,7 +15,9 @@ export const id = {
     "Estimated remaining: {{time}}": "Perkiraan sisa waktu: {{time}}",
     "No asset account found in LUKKEY hardware": "Tidak ditemukan akun aset di perangkat keras LUKKEY",
     "Please create or import an asset account in your LUKKEY hardware device.": "Silakan buat atau impor akun aset di perangkat keras LUKKEY Anda.",
-    "Synchronized": "Tersinkronisasi",
+
+    "Authentic device": "Perangkat autentik",
+    "Unknown device": "Perangkat ini tidak dapat diverifikasi sebagai perangkat LUKKEY asli",    "Synchronized": "Tersinkronisasi",
     "Verification successful!": "Verifikasi berhasil!",
     "You can now safely use the device.": "Anda sekarang dapat menggunakan perangkat dengan aman.",
     "Wallet ready!": "Dompet siap!",

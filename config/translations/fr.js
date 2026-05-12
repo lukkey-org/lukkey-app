@@ -15,7 +15,9 @@ export const fr = {
     "Estimated remaining: {{time}}": "Temps restant estimé : {{time}}",
     "No asset account found in LUKKEY hardware": "Aucun compte d'actif trouvé dans le matériel LUKKEY",
     "Please create or import an asset account in your LUKKEY hardware device.": "Veuillez créer ou importer un compte d'actif dans votre appareil matériel LUKKEY.",
-    "Synchronized": "Synchronisé",
+
+    "Authentic device": "Appareil authentique",
+    "Unknown device": "Impossible de vérifier cet appareil comme un LUKKEY authentique",    "Synchronized": "Synchronisé",
     "Verification successful!": "Vérification réussie !",
     "You can now safely use the device.": "Vous pouvez maintenant utiliser l'appareil en toute sécurité.",
     "Wallet ready!": "Portefeuille prêt !",

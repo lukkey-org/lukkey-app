@@ -15,7 +15,9 @@ export const mn = {
     "Estimated remaining: {{time}}": "Тооцоолсон үлдсэн хугацаа: {{time}}",
     "No asset account found in LUKKEY hardware": "LUKKEY төхөөрөмжид хөрөнгийн данс олдсонгүй",
     "Please create or import an asset account in your LUKKEY hardware device.": "LUKKEY төхөөрөмждөө хөрөнгийн данс үүсгэх эсвэл импортлоно уу.",
-    "Synchronized": "Синхрончлогдсон",
+
+    "Authentic device": "Жинхэнэ төхөөрөмж",
+    "Unknown device": "Энэ төхөөрөмжийг жинхэнэ LUKKEY төхөөрөмж эсэхийг баталгаажуулж чадсангүй",    "Synchronized": "Синхрончлогдсон",
     "Verification successful!": "Баталгаажуулалт амжилттай!",
     "You can now safely use the device.": "Та одоо төхөөрөмжийг аюулгүй ашиглах боломжтой.",
     "Wallet ready!": "Хэтэвч бэлэн!",
