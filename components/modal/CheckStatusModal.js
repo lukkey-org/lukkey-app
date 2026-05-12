@@ -137,6 +137,13 @@ const FirmwareUpdateSkeleton = ({ isDarkMode }) => {
   );
 };
 
+const NO_WALLET_AUTH_FINAL_SIZE = 48;
+const NO_WALLET_AUTH_INITIAL_SCALE = 3.75;
+const NO_WALLET_AUTH_RENDER_SIZE =
+  NO_WALLET_AUTH_FINAL_SIZE * NO_WALLET_AUTH_INITIAL_SCALE;
+const NO_WALLET_AUTH_RENDER_SCALE =
+  NO_WALLET_AUTH_FINAL_SIZE / NO_WALLET_AUTH_RENDER_SIZE;
+
 const noWalletStyles = StyleSheet.create({
   content: {
     width: "100%",
@@ -173,11 +180,15 @@ const noWalletStyles = StyleSheet.create({
     width: "100%",
   },
   authImageWrap: {
+    width: NO_WALLET_AUTH_FINAL_SIZE,
+    height: NO_WALLET_AUTH_FINAL_SIZE,
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 12,
   },
   authImage: {
-    width: 48,
-    height: 48,
+    width: NO_WALLET_AUTH_RENDER_SIZE,
+    height: NO_WALLET_AUTH_RENDER_SIZE,
     resizeMode: "contain",
   },
   authTitleWrap: {
@@ -723,6 +734,7 @@ const CheckStatusModal = ({
     noWalletIntroTitleOpacity,
     noWalletSubtitleShake,
     noWalletTransition,
+    status,
     visible,
   ]);
 
@@ -765,7 +777,7 @@ const CheckStatusModal = ({
   });
   const noWalletAuthScale = noWalletTransition.interpolate({
     inputRange: [0, 1],
-    outputRange: [3.75, 1],
+    outputRange: [1, NO_WALLET_AUTH_RENDER_SCALE],
   });
   const noWalletContentTranslateY = noWalletTransition.interpolate({
     inputRange: [0, 1],
@@ -902,6 +914,7 @@ const CheckStatusModal = ({
                     <Image
                       source={noWalletAuthImageSource}
                       style={noWalletStyles.authImage}
+                      resizeMethod="scale"
                     />
                   </Animated.View>
                   <Animated.Text
