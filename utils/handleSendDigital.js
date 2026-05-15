@@ -781,7 +781,9 @@ export const handleSendDigital = async ({
     }
 
     if (responseData?.data?.data) {
-      const signMessage = bleCmd.sign(chainKey, path, responseData.data.data) + "\r\n";
+      const signMessage =
+        bleCmd.sign(chainKey, path, responseData.data.data, destAddrFormat) +
+        "\r\n";
       console.log("Constructed NFT sign message:", JSON.stringify(signMessage));
       const signBase64 = Buffer.from(signMessage, "utf-8").toString("base64");
       logFlowStep("7/7", "BLE_SIGN payload", "chunked nft sign payload send", {

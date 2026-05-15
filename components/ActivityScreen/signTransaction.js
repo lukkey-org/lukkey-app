@@ -1447,7 +1447,8 @@ const signTransaction = async (
       try {
         signPayloadPretty = JSON.stringify(JSON.parse(signPayloadRaw), null, 2);
       } catch {}
-      const signMessage = bleCmd.sign(chainKey, path, signPayloadRaw) + "\r\n";
+      const signMessage =
+        bleCmd.sign(chainKey, path, signPayloadRaw, destAddrFormat) + "\r\n";
       console.log(
         `App sends the payload waiting for device signature:\nchain=${chainKey}\npath=${path}\npayload=${signPayloadPretty}`,
       );

@@ -6,7 +6,14 @@
 import { Buffer } from "buffer";
 
 export const bleCmd = {
-  sign: (chain, path, data) => JSON.stringify({ cmd: "sign", chain, path, data }),
+  sign: (chain, path, data, addrFormat = "") =>
+    JSON.stringify({
+      cmd: "sign",
+      chain,
+      path,
+      data,
+      addr_format: String(addrFormat || ""),
+    }),
   verify: (chain, accountId, addrFormat = "") =>
     JSON.stringify({
       cmd: "verify",
