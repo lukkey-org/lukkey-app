@@ -4,5 +4,4 @@
  * © Copyright LUKKEY AG
  */
 // Single source of truth for runtime dev flag
-// Dev mode toggle
-export const RUNTIME_DEV = false;
+export const RUNTIME_DEV = process.env.EXPO_PUBLIC_RUNTIME_DEV === "true";
