@@ -329,6 +329,13 @@ const CardItem = ({
       pressLockRef.current = false;
     }
   };
+  const handleBalancePress = (event) => {
+    event?.stopPropagation?.();
+    if (shouldJiggle || isDataLoading || typeof onToggleCardHide !== "function") {
+      return;
+    }
+    onToggleCardHide(card);
+  };
 
   const markDragReady = React.useCallback(() => {
     if (!shouldJiggle || dragReadyRef.current) return;
@@ -384,9 +391,7 @@ const CardItem = ({
           dragTopBoundaryYRef.current = Number.isFinite(topBoundaryY)
             ? topBoundaryY
             : null;
-          dragBaseLayoutYRef.current = Number.isFinite(layoutY)
-            ? layoutY
-            : null;
+          dragBaseLayoutYRef.current = Number.isFinite(layoutY) ? layoutY : null;
           if (Number.isFinite(layoutY)) {
             const cardTopOnScreen = containerTop + layoutY - currentScrollY;
             dragTouchOffsetRef.current =
@@ -500,9 +505,7 @@ const CardItem = ({
             const containerTop = Number(scrollContainerAbsYRef?.current ?? 0);
             const currentScrollY = Number(scrollYOffset?.current ?? 0);
             const layoutY = Number(cardLayoutYRef?.current?.[index]);
-            const activeBaseLayoutY = Number.isFinite(
-              dragBaseLayoutYRef.current,
-            )
+            const activeBaseLayoutY = Number.isFinite(dragBaseLayoutYRef.current)
               ? dragBaseLayoutYRef.current
               : Number.isFinite(layoutY)
                 ? layoutY
@@ -512,9 +515,7 @@ const CardItem = ({
               : 0;
             const desiredCardTop =
               Number(gestureState.moveY ?? 0) - dragTouchOffsetRef.current;
-            const topCardBoundaryY = Number.isFinite(
-              dragTopBoundaryYRef.current,
-            )
+            const topCardBoundaryY = Number.isFinite(dragTopBoundaryYRef.current)
               ? dragTopBoundaryYRef.current
               : getTopCardBoundaryY();
             const clampedCardTop = Number.isFinite(topCardBoundaryY)
@@ -861,9 +862,7 @@ const CardItem = ({
         onColorsChange={handleColorsChange}
       />
       <Reanimated.View
-        layout={
-          isJiggleMode && !isActiveDrag ? swapLayoutTransition : undefined
-        }
+        layout={isJiggleMode && !isActiveDrag ? swapLayoutTransition : undefined}
         style={[
           VaultScreenStyle.cardContainer,
           {
@@ -993,9 +992,9 @@ const CardItem = ({
                 />
               </TouchableOpacity>
             )}
-            <View
-              {...(shouldJiggle ? panResponder.panHandlers : {})}
-              style={[
+              <View
+                {...(shouldJiggle ? panResponder.panHandlers : {})}
+                style={[
                 VaultScreenStyle.assetPageCard,
                 index === 0
                   ? VaultScreenStyle.cardFirst
@@ -1131,7 +1130,20 @@ const CardItem = ({
                         : fiatBalanceDisplayMemo;
 
                       return (
-                        <View style={styles.cardBalanceGroup}>
+                        <TouchableOpacity
+                          activeOpacity={0.85}
+                          disabled={
+                            shouldJiggle ||
+                            isDataLoading ||
+                            typeof onToggleCardHide !== "function"
+                          }
+                          accessibilityRole="button"
+                          accessibilityLabel="Toggle balance visibility"
+                          onPressIn={(event) => event?.stopPropagation?.()}
+                          onPressOut={(event) => event?.stopPropagation?.()}
+                          onPress={handleBalancePress}
+                          style={styles.cardBalanceGroup}
+                        >
                           {/* Balance display - supports skeleton screen */}
                           {isDataLoading ? (
                             <View
@@ -1216,107 +1228,120 @@ const CardItem = ({
                               </>
                             )}
                           </View>
-                        </View>
+                        </TouchableOpacity>
                       );
                     })()
                   : isCardExpanded && (
                       <View style={VaultScreenStyle.cardModalContent}>
-                        {["carBalCen", "balShortNameCtr"].map((styleKey, i) => {
-                          if (isDataLoading) {
-                            const skeletonWidth = 160;
-                            const skeletonHeight = i === 0 ? 28 : 22;
+                        <TouchableOpacity
+                          activeOpacity={0.85}
+                          disabled={
+                            shouldJiggle ||
+                            isDataLoading ||
+                            typeof onToggleCardHide !== "function"
+                          }
+                          accessibilityRole="button"
+                          accessibilityLabel="Toggle balance visibility"
+                          onPressIn={(event) => event?.stopPropagation?.()}
+                          onPressOut={(event) => event?.stopPropagation?.()}
+                          onPress={handleBalancePress}
+                          style={styles.cardModalBalanceToggle}
+                        >
+                          {["carBalCen", "balShortNameCtr"].map((styleKey, i) => {
+                            if (isDataLoading) {
+                              const skeletonWidth = 160;
+                              const skeletonHeight = i === 0 ? 28 : 22;
+                              return (
+                                <View
+                                  key={i}
+                                  style={[
+                                    styles.cardModalBalanceLine,
+                                    {
+                                      marginBottom:
+                                        StyleSheet.flatten(
+                                          VaultScreenStyle[styleKey],
+                                        )?.marginBottom || 0,
+                                    },
+                                  ]}
+                                >
+                                  <DataSkeleton
+                                    width={skeletonWidth}
+                                    height={skeletonHeight}
+                                    isDarkMode={isDarkMode}
+                                    style={{ opacity: 0.2 }}
+                                  />
+                                </View>
+                              );
+                            }
+                            const rawValue =
+                              i === 0
+                                ? formatBalance(runtimeBalance, {
+                                    symbol: card.shortName,
+                                    context: "CardItem.modalBalance",
+                                    compactLarge: false,
+                                  })
+                                : getConvertedBalance(
+                                    runtimeBalance,
+                                    card.shortName,
+                                    "CardItem.modalFiat",
+                                  );
+                            const numericValue = Number(rawValue);
+                            const displayValue = Number.isFinite(numericValue)
+                              ? typeof rawValue === "string"
+                                ? rawValue
+                                : numericValue.toFixed(2)
+                              : (() => {
+                                  console.log(
+                                    `[Vault][CardItem] modal display value is non-finite, using 0.00 -- card=${card.shortName}, index=${i}, raw=${rawValue}, balance=${runtimeBalance}`,
+                                  );
+                                  return "0.00";
+                                })();
+                            const decimals = (() => {
+                              const fractional =
+                                String(displayValue).split(".")[1];
+                              return fractional ? fractional.length : 0;
+                            })();
+                            const unitLabel =
+                              i === 0 ? card.shortName : currencyUnit;
+                            const flattenedStyle = StyleSheet.flatten([
+                              VaultScreenStyle[styleKey],
+                              isBlackText && { color: "#121518" },
+                            ]);
+                            const { marginBottom, ...textStyle } =
+                              flattenedStyle || {};
+                            const showMask = hideNumbers;
                             return (
                               <View
                                 key={i}
-                                style={{
-                                  flexDirection: "row",
-                                  alignItems: "baseline",
-                                  justifyContent: "center",
-                                  marginBottom:
-                                    StyleSheet.flatten(
-                                      VaultScreenStyle[styleKey],
-                                    )?.marginBottom || 0,
-                                }}
+                                style={[
+                                  styles.cardModalBalanceLine,
+                                  { marginBottom: marginBottom || 0 },
+                                ]}
                               >
-                                <DataSkeleton
-                                  width={skeletonWidth}
-                                  height={skeletonHeight}
-                                  isDarkMode={isDarkMode}
-                                  style={{ opacity: 0.2 }}
-                                />
+                                {showMask ? (
+                                  <Text style={[textStyle, { marginBottom: 0 }]}>
+                                    {`${maskAmountStr(displayValue)} ${unitLabel}`}
+                                  </Text>
+                                ) : (
+                                  <>
+                                    <CountUpText
+                                      value={
+                                        Number.isFinite(numericValue)
+                                          ? numericValue
+                                          : 0
+                                      }
+                                      decimals={decimals}
+                                      style={textStyle}
+                                    />
+                                    <Text style={[textStyle, { marginLeft: 4 }]}>
+                                      {unitLabel}
+                                    </Text>
+                                  </>
+                                )}
                               </View>
                             );
-                          }
-                          const rawValue =
-                            i === 0
-                              ? formatBalance(runtimeBalance, {
-                                  symbol: card.shortName,
-                                  context: "CardItem.modalBalance",
-                                  compactLarge: false,
-                                })
-                              : getConvertedBalance(
-                                  runtimeBalance,
-                                  card.shortName,
-                                  "CardItem.modalFiat",
-                                );
-                          const numericValue = Number(rawValue);
-                          const displayValue = Number.isFinite(numericValue)
-                            ? typeof rawValue === "string"
-                              ? rawValue
-                              : numericValue.toFixed(2)
-                            : (() => {
-                                console.log(
-                                  `[Vault][CardItem] modal display value is non-finite, using 0.00 -- card=${card.shortName}, index=${i}, raw=${rawValue}, balance=${runtimeBalance}`,
-                                );
-                                return "0.00";
-                              })();
-                          const decimals = (() => {
-                            const fractional =
-                              String(displayValue).split(".")[1];
-                            return fractional ? fractional.length : 0;
-                          })();
-                          const unitLabel =
-                            i === 0 ? card.shortName : currencyUnit;
-                          const flattenedStyle = StyleSheet.flatten([
-                            VaultScreenStyle[styleKey],
-                            isBlackText && { color: "#121518" },
-                          ]);
-                          const { marginBottom, ...textStyle } =
-                            flattenedStyle || {};
-                          const showMask = hideNumbers;
-                          return (
-                            <View
-                              key={i}
-                              style={{
-                                flexDirection: "row",
-                                alignItems: "baseline",
-                                justifyContent: "center",
-                                marginBottom: marginBottom || 0,
-                              }}
-                            >
-                              {showMask ? (
-                                <Text style={[textStyle, { marginBottom: 0 }]}>
-                                  {`${maskAmountStr(displayValue)} ${unitLabel}`}
-                                </Text>
-                              ) : (
-                                <>
-                                  <CountUpText
-                                    value={
-                                      Number.isFinite(numericValue)
-                                        ? numericValue
-                                        : 0
-                                    }
-                                    decimals={decimals}
-                                    style={textStyle}
-                                  />
-                                  <Text style={[textStyle, { marginLeft: 4 }]}>
-                                    {unitLabel}
-                                  </Text>
-                                </>
-                              )}
-                            </View>
-                          );
-                        })}
+                          })}
+                        </TouchableOpacity>
                       </View>
                     )}
               </ImageBackground>

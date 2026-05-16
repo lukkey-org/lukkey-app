@@ -749,6 +749,7 @@ function VaultScreen({ route, navigation }) {
     hideNumbersByCard,
     getCardHideKey,
     toggleCardHideNumbers,
+    resetHideNumbers,
   } = useHideNumbers();
 
   const { handleCardLayout, scrollCardToTop, initCardPosition } =
@@ -1177,6 +1178,7 @@ function VaultScreen({ route, navigation }) {
 
   useEffect(() => {
     if (verificationStatus === "walletReady") {
+      resetHideNumbers();
       if (walletReadyRefreshTimerRef.current) {
         clearTimeout(walletReadyRefreshTimerRef.current);
         walletReadyRefreshTimerRef.current = null;
@@ -1221,9 +1223,21 @@ function VaultScreen({ route, navigation }) {
       }
     };
   }, [
+    resetHideNumbers,
     setCryptoCards,
     verificationStatus,
   ]);
+
+  useEffect(() => {
+    if (
+      Array.isArray(verifiedDevices) &&
+      verifiedDevices.length === 0 &&
+      Array.isArray(cryptoCards) &&
+      cryptoCards.length === 0
+    ) {
+      resetHideNumbers();
+    }
+  }, [cryptoCards, resetHideNumbers, verifiedDevices]);
 
   useEffect(() => {
     if (verificationStatus !== "walletReady") {

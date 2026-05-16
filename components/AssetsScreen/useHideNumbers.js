@@ -5,9 +5,11 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-const HIDE_NUMBERS_KEY = "hideNumbers";
-const HIDE_NUMBERS_BY_CARD_KEY = "hideNumbersByCard";
+import {
+  HIDE_NUMBERS_BY_CARD_KEY,
+  HIDE_NUMBERS_KEY,
+  resetStoredHideNumbers,
+} from "../../utils/hideNumbersStorage";
 
 const useHideNumbers = () => {
   const [hideNumbers, setHideNumbers] = useState(false);
@@ -91,12 +93,19 @@ const useHideNumbers = () => {
     [getCardHideKey],
   );
 
+  const resetHideNumbers = useCallback(() => {
+    setHideNumbers(false);
+    setHideNumbersByCard({});
+    resetStoredHideNumbers();
+  }, []);
+
   return {
     hideNumbers,
     setHideNumbers,
     hideNumbersByCard,
     getCardHideKey,
     toggleCardHideNumbers,
+    resetHideNumbers,
   };
 };
 

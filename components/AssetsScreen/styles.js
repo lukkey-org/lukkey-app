@@ -58,6 +58,19 @@ const styles = StyleSheet.create({
   cardChainText: {
     flexShrink: 1,
   },
+  cardModalBalanceToggle: {
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: "58%",
+    minHeight: 112,
+    paddingHorizontal: 24,
+    paddingVertical: 18,
+  },
+  cardModalBalanceLine: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    justifyContent: "center",
+  },
   cardBalanceInline: {
     position: "relative",
     top: 0,

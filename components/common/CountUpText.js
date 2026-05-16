@@ -27,6 +27,7 @@ const CountUpText = ({
   duration = 700,
   startFrom = 0,
   style,
+  pointerEvents = "none",
 }) => {
   const target = Number.isFinite(Number(value)) ? Number(value) : 0;
   const start = Number.isFinite(Number(startFrom)) ? Number(startFrom) : 0;
@@ -56,6 +57,7 @@ const CountUpText = ({
       scrollEnabled={false}
       underlineColorAndroid="transparent"
       defaultValue={defaultText}
+      pointerEvents={pointerEvents}
       style={[styles.text, style]}
       animatedProps={animatedProps}
     />

@@ -7,6 +7,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { deleteSecureItems } from "./secureStorage";
 import { deleteAllStoredPubkeys, PUBKEY_CHAINS } from "./pubkeyStorage";
 import { stripRuntimeAssetMetrics } from "./assetRuntimeFields";
+import {
+  HIDE_NUMBERS_BY_CARD_KEY,
+  HIDE_NUMBERS_KEY,
+  resetStoredHideNumbers,
+} from "./hideNumbersStorage";
 
 const BASE_KEYS = [
   "cryptoCards",
@@ -21,6 +26,8 @@ const BASE_KEYS = [
   "bluetoothVersion",
   "baseVersion",
   "verificationStatus",
+  HIDE_NUMBERS_KEY,
+  HIDE_NUMBERS_BY_CARD_KEY,
 ];
 
 function resetInitialAdditionalCryptos(list) {
@@ -92,6 +99,7 @@ export async function clearWalletOnPinTimeout({
   // initialAdditionalCryptos handled above
 
   try {
+    await resetStoredHideNumbers();
     const keys = await AsyncStorage.getAllKeys();
     const pubkeyKeys = (keys || []).filter((k) => k.startsWith("pubkey_"));
     const removeKeys = [...BASE_KEYS, ...pubkeyKeys];

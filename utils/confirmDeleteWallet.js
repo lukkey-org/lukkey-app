@@ -33,6 +33,7 @@
 import { deleteSecureItems } from "./secureStorage";
 import { deleteAllStoredPubkeys, PUBKEY_CHAINS } from "./pubkeyStorage";
 import { stripRuntimeAssetMetrics } from "./assetRuntimeFields";
+import { resetStoredHideNumbers } from "./hideNumbersStorage";
 
 export async function confirmDeleteWallet({
   setVerifiedDevices,
@@ -264,6 +265,7 @@ export async function confirmDeleteWallet({
     const cryptoCardsData = asCryptoCards;
     const parsedCryptoCards = JSON.parse(cryptoCardsData);
     if (parsedCryptoCards && parsedCryptoCards.length > 0) {
+      await resetStoredHideNumbers(AsyncStorage);
       await AsyncStorage.multiRemove([
         "cryptoCards",
         "addedCryptos",
