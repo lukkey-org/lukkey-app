@@ -28,9 +28,35 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 16,
     right: 16,
+    maxWidth: "48%",
     height: 46,
     justifyContent: "space-between",
     alignItems: "flex-end",
+  },
+  cardTitleGroup: {
+    position: "absolute",
+    top: 13,
+    left: 71,
+    right: "47%",
+  },
+  cardTitleStack: {
+    height: 46,
+    justifyContent: "space-between",
+  },
+  cardTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    minWidth: 0,
+  },
+  cardTitleText: {
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  cardChainPill: {
+    maxWidth: "100%",
+  },
+  cardChainText: {
+    flexShrink: 1,
   },
   cardBalanceInline: {
     position: "relative",

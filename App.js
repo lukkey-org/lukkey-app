@@ -67,7 +67,10 @@ import {
   DeviceContext,
   DarkModeContext,
 } from "./utils/DeviceContext";
-import { prefixToShortName } from "./config/chainPrefixes";
+import {
+  getRequiredAddressSyncKeys,
+  prefixToShortName,
+} from "./config/chainPrefixes";
 import { bluetoothConfig } from "./env/bluetoothConfig";
 import { Buffer } from "buffer";
 import DevToast from "./components/common/DevToast";
@@ -1108,6 +1111,33 @@ function AppContent({
     openExclusiveModal,
   });
 
+  const requiredAddressKeysForModal = React.useMemo(
+    () => getRequiredAddressSyncKeys(prefixToShortName),
+    [],
+  );
+  const expectedPubkeyKeysForModal = React.useMemo(
+    () => ["cosmos", "ripple", "celestia", "osmosis", "aptos"],
+    [],
+  );
+  const syncAddressDoneForModal = requiredAddressKeysForModal.filter((key) => {
+    const value = receivedAddresses?.[key];
+    return typeof value === "string" && value.trim().length > 0;
+  }).length;
+  const syncPubkeyDoneForModal = expectedPubkeyKeysForModal.filter((key) => {
+    const value = receivedPubKeys?.[key];
+    return typeof value === "string" && value.trim().length > 0;
+  }).length;
+  const syncProgressTotalForModal =
+    requiredAddressKeysForModal.length + expectedPubkeyKeysForModal.length;
+  const waitingProgressForModal =
+    syncProgressTotalForModal > 0
+      ? Math.min(
+          1,
+          (syncAddressDoneForModal + syncPubkeyDoneForModal) /
+            syncProgressTotalForModal,
+        )
+      : 0;
+
   return (
     <View style={{ flex: 1, backgroundColor: bottomBackgroundColor }}>
       <DevToast
@@ -1416,18 +1446,7 @@ function AppContent({
         onClose={() => setCheckStatusModalVisible(false)}
         progress={
           verificationStatus === "waiting"
-            ? (Object.keys(receivedAddresses || {}).length +
-                Object.keys(receivedPubKeys || {}).filter((k) =>
-                  [
-                    "cosmos",
-                    "ripple",
-                    "celestia",
-                    // "juno", // Hidden for now
-                    "osmosis",
-                    "aptos",
-                  ].includes(k),
-                ).length) /
-              (Object.keys(prefixToShortName).length + 5)
+            ? waitingProgressForModal
             : undefined
         }
       />

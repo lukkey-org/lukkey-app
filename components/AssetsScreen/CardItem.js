@@ -34,6 +34,7 @@ import {
   resolveAssetIcon,
   resolveChainIcon,
 } from "../../utils/assetIconResolver";
+import { displayChainName } from "../../utils/assetDisplayFormat";
 
 /**
  * Card component, responsible for rendering a single asset card
@@ -218,14 +219,6 @@ const CardItem = ({
     isCardExpanded &&
     selectedCardIndex === index;
   const shouldJiggle = isJiggleMode && !modalVisible && !isClosing;
-
-  // Display chain name (only modify the display)
-  const displayChainName = (name) => {
-    if (!name) return "";
-    const lower = String(name).toLowerCase();
-    if (lower === "binance") return "BNB Chain";
-    return name.charAt(0).toUpperCase() + name.slice(1);
-  };
 
   // Number masking: Card only supports "***" or "*****"
   const maskAmountStr = (val) => {
@@ -1051,25 +1044,19 @@ const CardItem = ({
                       </View>
                     ))}
                   </View>
-                  <View style={{ position: "absolute", top: 13, left: 71 }}>
-                    <View
-                      style={{
-                        height: 46,
-                        justifyContent: "space-between",
-                      }}
-                    >
+                  <View style={styles.cardTitleGroup}>
+                    <View style={styles.cardTitleStack}>
                       {["cardName", "chainText"].map((textStyle, i) =>
                         i === 0 ? (
-                          <View
-                            key={i}
-                            style={{
-                              flexDirection: "row",
-                              alignItems: "center",
-                            }}
-                          >
+                          <View key={i} style={styles.cardTitleRow}>
                             <Text
+                              numberOfLines={1}
+                              ellipsizeMode="tail"
+                              adjustsFontSizeToFit
+                              minimumFontScale={0.72}
                               style={[
                                 VaultScreenStyle[textStyle],
+                                styles.cardTitleText,
                                 {
                                   color: isBlackText ? "#333" : "#eee",
                                   marginRight: 4,
@@ -1083,15 +1070,24 @@ const CardItem = ({
                                 name="gas-pump"
                                 size={12}
                                 color="#F3F4F6"
-                                style={{ marginLeft: 2 }}
+                                style={{ marginLeft: 2, flexShrink: 0 }}
                               />
                             ) : null}
                           </View>
                         ) : (
-                          <View key={i} style={VaultScreenStyle.chainContainer}>
+                          <View
+                            key={i}
+                            style={[
+                              VaultScreenStyle.chainContainer,
+                              styles.cardChainPill,
+                            ]}
+                          >
                             <Text
+                              numberOfLines={1}
+                              ellipsizeMode="tail"
                               style={[
                                 VaultScreenStyle.chainCardText,
+                                styles.cardChainText,
                                 { color: isBlackText ? "#333" : "#eee" },
                               ]}
                             >
@@ -1153,6 +1149,10 @@ const CardItem = ({
                             </View>
                           ) : (
                             <Text
+                              numberOfLines={1}
+                              ellipsizeMode="tail"
+                              adjustsFontSizeToFit
+                              minimumFontScale={0.7}
                               style={[
                                 VaultScreenStyle.cardBalance,
                                 styles.cardBalanceInline,

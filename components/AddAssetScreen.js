@@ -43,6 +43,7 @@ import {
   resolveAssetIcon,
   resolveChainIcon,
 } from "../utils/assetIconResolver";
+import { displayChainName } from "../utils/assetDisplayFormat";
 import AnimatedWebP from "./common/AnimatedWebP";
 import { BlurView } from "./common/AppBlurView";
 
@@ -118,13 +119,6 @@ const AddAssetScreen = () => {
       })),
     [initialAdditionalCryptos]
   );
-
-  const displayChainName = (name) => {
-    if (!name) return "";
-    const lower = String(name).toLowerCase();
-    if (lower === "binance") return "BNB Chain";
-    return name.charAt(0).toUpperCase() + name.slice(1);
-  };
 
   const displayShortName = (shortName) =>
     String(shortName || "").replace(/\.e$/i, "");

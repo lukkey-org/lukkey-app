@@ -45,3 +45,18 @@ export function formatCryptoBalanceDisplay(
   const decimalPlaces = Math.min(7, fractional || 2);
   return num.toFixed(decimalPlaces);
 }
+
+export function displayChainName(name) {
+  const normalized = String(name || "").trim();
+  if (!normalized) return "";
+
+  const lower = normalized.toLowerCase();
+  if (lower === "binance") return "BNB Chain";
+
+  return normalized
+    .replace(/_/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
