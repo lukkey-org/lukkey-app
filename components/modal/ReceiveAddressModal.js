@@ -45,6 +45,7 @@ import {
   formatFiatBalanceDisplay,
   formatScientific,
 } from "../../utils/assetDisplayFormat";
+import { RUNTIME_DEV } from "../../utils/runtimeFlags";
 
 /**
  * Universal payment address pop-up window
@@ -762,7 +763,7 @@ const AddressInfo = ({
       addressRows = [
         {
           label: "",
-          labelNode: (
+          labelNode: RUNTIME_DEV ? (
             <AddressTypeToggle
               activeType={resolvedType}
               options={bchOptions}
@@ -773,7 +774,7 @@ const AddressInfo = ({
                 hasOtherBchBalance ? t("Other balances") : ""
               }
             />
-          ),
+          ) : null,
           value,
         },
       ];
@@ -781,7 +782,7 @@ const AddressInfo = ({
       addressRows = [
         {
           label: "",
-          labelNode: (
+          labelNode: RUNTIME_DEV ? (
             <AddressTypeToggle
               activeType={BCH_ADDRESS_TYPES.CASHADDR}
               options={bchOptions}
@@ -789,7 +790,7 @@ const AddressInfo = ({
               isDarkMode={isDarkMode}
               compact
             />
-          ),
+          ) : null,
           value: displayCashAddr,
         },
       ];
@@ -797,7 +798,7 @@ const AddressInfo = ({
       addressRows = [
         {
           label: "",
-          labelNode: (
+          labelNode: RUNTIME_DEV ? (
             <AddressTypeToggle
               activeType={BCH_ADDRESS_TYPES.LEGACY}
               options={bchOptions}
@@ -805,7 +806,7 @@ const AddressInfo = ({
               isDarkMode={isDarkMode}
               compact
             />
-          ),
+          ) : null,
           value: resolvedLegacyAddr,
         },
       ];
@@ -957,7 +958,7 @@ const AddressInfo = ({
       addressRows = [
         {
           label: "",
-          labelNode: (
+          labelNode: RUNTIME_DEV ? (
             <AddressTypeToggle
               activeType={resolvedType}
               options={btcOptions}
@@ -968,7 +969,7 @@ const AddressInfo = ({
                 hasOtherBtcBalance ? t("Other balances") : ""
               }
             />
-          ),
+          ) : null,
           value,
         },
       ];
@@ -1084,7 +1085,7 @@ const AddressInfo = ({
       addressRows = [
         {
           label: "",
-          labelNode: (
+          labelNode: RUNTIME_DEV ? (
             <AddressTypeToggle
               activeType={resolvedType}
               options={ltcOptions}
@@ -1095,7 +1096,7 @@ const AddressInfo = ({
                 hasOtherLtcBalance ? t("Other balances") : ""
               }
             />
-          ),
+          ) : null,
           value,
         },
       ];
