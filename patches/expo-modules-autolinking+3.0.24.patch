@@ -1,0 +1,39 @@
+diff --git a/node_modules/expo-modules-autolinking/android/expo-gradle-plugin/expo-autolinking-plugin-shared/src/main/kotlin/expo/modules/plugin/AutolinkigCommandBuilder.kt b/node_modules/expo-modules-autolinking/android/expo-gradle-plugin/expo-autolinking-plugin-shared/src/main/kotlin/expo/modules/plugin/AutolinkigCommandBuilder.kt
+index 2064ca4..84263db 100644
+--- a/node_modules/expo-modules-autolinking/android/expo-gradle-plugin/expo-autolinking-plugin-shared/src/main/kotlin/expo/modules/plugin/AutolinkigCommandBuilder.kt
++++ b/node_modules/expo-modules-autolinking/android/expo-gradle-plugin/expo-autolinking-plugin-shared/src/main/kotlin/expo/modules/plugin/AutolinkigCommandBuilder.kt
+@@ -22,7 +22,7 @@ class AutolinkingCommandBuilder {
+ 
+   private var autolinkingCommand = emptyList<String>()
+   private var useJson = emptyList<String>()
+-  private val optionsMap = mutableMapOf<String, String>()
++  private val optionsMap = mutableMapOf<String, List<String>>()
+   private var searchPaths = emptyList<String>()
+ 
+   /**
+@@ -36,14 +36,14 @@ class AutolinkingCommandBuilder {
+    * Add an option to the command.
+    */
+   fun option(key: String, value: String) = apply {
+-    optionsMap[key] = value
++    optionsMap[key] = listOf(value)
+   }
+ 
+   /**
+    * Add a list of values as an option to the command.
+    */
+   fun option(key: String, value: List<String>) = apply {
+-    optionsMap[key] = value.joinToString(" ")
++    optionsMap[key] = value
+   }
+ 
+   /**
+@@ -71,7 +71,7 @@ class AutolinkingCommandBuilder {
+       autolinkingCommand +
+       platform +
+       useJson +
+-      optionsMap.map { (key, value) -> listOf("--$key", value) }.flatMap { it } +
++      optionsMap.map { (key, value) -> listOf("--$key") + value }.flatMap { it } +
+       searchPaths
+     return Os.windowsAwareCommandLine(command)
+   }

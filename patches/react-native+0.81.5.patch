@@ -1,0 +1,82 @@
+diff --git a/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/views/view/WindowUtil.kt b/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/views/view/WindowUtil.kt
+index 60f2a94..1ad183e 100644
+--- a/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/views/view/WindowUtil.kt
++++ b/node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/views/view/WindowUtil.kt
+@@ -7,7 +7,6 @@
+ 
+ package com.facebook.react.views.view
+ 
+-import android.graphics.Color
+ import android.os.Build
+ import android.view.Window
+ import android.view.WindowManager
+@@ -15,16 +14,6 @@ import androidx.core.view.ViewCompat
+ import androidx.core.view.WindowCompat
+ import androidx.core.view.WindowInsetsCompat
+ import androidx.core.view.WindowInsetsControllerCompat
+-import com.facebook.react.views.common.UiModeUtils
+-
+-// The light scrim color used in the platform API 29+
+-// https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/com/android/internal/policy/DecorView.java;drc=6ef0f022c333385dba2c294e35b8de544455bf19;l=142
+-internal val LightNavigationBarColor = Color.argb(0xe6, 0xFF, 0xFF, 0xFF)
+-
+-// The dark scrim color used in the platform.
+-// https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/res/res/color/system_bar_background_semi_transparent.xml
+-// https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/res/remote_color_resources_res/values/colors.xml;l=67
+-internal val DarkNavigationBarColor = Color.argb(0x80, 0x1b, 0x1b, 0x1b)
+ 
+ /**
+  * This does not enable or apply edge-to-edge behavior, it simply tracks whether it has been flagged
+@@ -73,9 +62,6 @@ private fun Window.statusBarHide() {
+     }
+   } else {
+     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+-      // Ensure the content extends into the cutout area
+-      attributes.layoutInDisplayCutoutMode =
+-          WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+       setDecorFitsSystemWindows(false)
+     }
+     addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+@@ -92,8 +78,6 @@ private fun Window.statusBarShow() {
+     }
+   } else {
+     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+-      attributes.layoutInDisplayCutoutMode =
+-          WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT
+       setDecorFitsSystemWindows(true)
+     }
+     addFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN)
+@@ -105,33 +89,11 @@ private fun Window.statusBarShow() {
+ internal fun Window.enableEdgeToEdge() {
+   WindowCompat.setDecorFitsSystemWindows(this, false)
+ 
+-  val isDarkMode = UiModeUtils.isDarkMode(context)
+-
+   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+     isStatusBarContrastEnforced = false
+     isNavigationBarContrastEnforced = true
+   }
+ 
+-  statusBarColor = Color.TRANSPARENT
+-  navigationBarColor =
+-      when {
+-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> Color.TRANSPARENT
+-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !isDarkMode -> LightNavigationBarColor
+-        else -> DarkNavigationBarColor
+-      }
+-
+-  WindowInsetsControllerCompat(this, decorView).run {
+-    isAppearanceLightNavigationBars = !isDarkMode
+-  }
+-
+-  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+-    attributes.layoutInDisplayCutoutMode =
+-        when {
+-          Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ->
+-              WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+-          else -> WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+-        }
+-  }
+ }
+ 
+ internal fun Window.disableEdgeToEdge() {

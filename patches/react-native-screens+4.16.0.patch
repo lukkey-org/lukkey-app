@@ -1,0 +1,86 @@
+diff --git a/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenWindowTraits.kt b/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenWindowTraits.kt
+index 7af40fa..97cce27 100644
+--- a/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenWindowTraits.kt
++++ b/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenWindowTraits.kt
+@@ -1,7 +1,5 @@
+ package com.swmansion.rnscreens
+ 
+-import android.animation.ArgbEvaluator
+-import android.animation.ValueAnimator
+ import android.app.Activity
+ import android.content.pm.ActivityInfo
+ import android.graphics.Color
+@@ -26,8 +24,6 @@ object ScreenWindowTraits {
+     private var didSetOrientation = false
+     private var didSetStatusBarAppearance = false
+     private var didSetNavigationBarAppearance = false
+-    private var defaultStatusBarColor: Int? = null
+-
+     private var windowInsetsListener =
+         object : OnApplyWindowInsetsListener {
+             override fun onApplyWindowInsets(
+@@ -95,35 +91,7 @@ object ScreenWindowTraits {
+         activity: Activity?,
+         context: ReactContext?,
+     ) {
+-        if (activity == null || context == null) {
+-            return
+-        }
+-        if (defaultStatusBarColor == null) {
+-            defaultStatusBarColor = activity.window.statusBarColor
+-        }
+-        val screenForColor = findScreenForTrait(screen, WindowTraits.COLOR)
+-        val screenForAnimated = findScreenForTrait(screen, WindowTraits.ANIMATED)
+-        val color = screenForColor?.statusBarColor ?: defaultStatusBarColor
+-        val animated = screenForAnimated?.isStatusBarAnimated ?: false
+-
+-        UiThreadUtil.runOnUiThread(
+-            object : GuardedRunnable(context.exceptionHandler) {
+-                override fun runGuarded() {
+-                    val window = activity.window
+-                    val curColor: Int = window.statusBarColor
+-                    val colorAnimation = ValueAnimator.ofObject(ArgbEvaluator(), curColor, color)
+-                    colorAnimation.addUpdateListener { animator ->
+-                        window.statusBarColor = animator.animatedValue as Int
+-                    }
+-                    if (animated) {
+-                        colorAnimation.setDuration(300).startDelay = 0
+-                    } else {
+-                        colorAnimation.setDuration(0).startDelay = 300
+-                    }
+-                    colorAnimation.start()
+-                }
+-            },
+-        )
++        return
+     }
+ 
+     internal fun setStyle(
+@@ -215,13 +183,12 @@ object ScreenWindowTraits {
+         val window = activity.window
+ 
+         val screenForNavBarColor = findScreenForTrait(screen, WindowTraits.NAVIGATION_BAR_COLOR)
+-        val color = screenForNavBarColor?.navigationBarColor ?: window.navigationBarColor
++        val color = screenForNavBarColor?.navigationBarColor ?: return
+ 
+         UiThreadUtil.runOnUiThread {
+             WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightNavigationBars =
+                 isColorLight(color)
+         }
+-        window.navigationBarColor = color
+     }
+ 
+     @Deprecated(
+diff --git a/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/SheetUtils.kt b/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/SheetUtils.kt
+index ce131ca..21a1391 100644
+--- a/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/SheetUtils.kt
++++ b/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/SheetUtils.kt
+@@ -134,7 +134,7 @@ fun Screen.isSheetFitToContents(): Boolean =
+         sheetDetents.count() == 1 &&
+         sheetDetents.first() == Screen.SHEET_FIT_TO_CONTENTS
+ 
+-fun Screen.usesFormSheetPresentation(): Boolean = stackPresentation === Screen.StackPresentation.FORM_SHEET
++fun Screen.usesFormSheetPresentation(): Boolean = false
+ 
+ fun Screen.requiresEnterTransitionPostponing(): Boolean {
+     // On old architecture the content wrapper might not have received its frame yet,

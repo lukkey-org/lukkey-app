@@ -1,0 +1,77 @@
+diff --git a/node_modules/expo-navigation-bar/android/src/main/java/expo/modules/navigationbar/NavigationBarModule.kt b/node_modules/expo-navigation-bar/android/src/main/java/expo/modules/navigationbar/NavigationBarModule.kt
+index 08a2f23..79529ef 100644
+--- a/node_modules/expo-navigation-bar/android/src/main/java/expo/modules/navigationbar/NavigationBarModule.kt
++++ b/node_modules/expo-navigation-bar/android/src/main/java/expo/modules/navigationbar/NavigationBarModule.kt
+@@ -1,6 +1,5 @@
+ package expo.modules.navigationbar
+ 
+-import android.graphics.Color
+ import android.os.Build
+ import android.os.Bundle
+ import android.view.View
+@@ -52,7 +51,7 @@ class NavigationBarModule : Module() {
+     }.runOnQueue(Queues.MAIN)
+ 
+     AsyncFunction<String>("getBackgroundColorAsync") {
+-      return@AsyncFunction colorToHex(currentActivity.window.navigationBarColor)
++      return@AsyncFunction "#00000000"
+     }.runOnQueue(Queues.MAIN)
+ 
+     AsyncFunction("setBorderColorAsync") { color: Int, promise: Promise ->
+@@ -60,11 +59,7 @@ class NavigationBarModule : Module() {
+     }.runOnQueue(Queues.MAIN)
+ 
+     AsyncFunction<String>("getBorderColorAsync") {
+-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+-        return@AsyncFunction colorToHex(currentActivity.window.navigationBarDividerColor)
+-      } else {
+-        throw NavigationBarException("'getBorderColorAsync' is only available on Android API 28 or higher")
+-      }
++      return@AsyncFunction "#00000000"
+     }.runOnQueue(Queues.MAIN)
+ 
+     AsyncFunction("setButtonStyleAsync") { buttonStyle: String, promise: Promise ->
+@@ -127,9 +122,5 @@ class NavigationBarModule : Module() {
+ 
+   companion object {
+     private const val VISIBILITY_EVENT_NAME = "ExpoNavigationBar.didChange"
+-
+-    fun colorToHex(color: Int): String {
+-      return String.format("#%02x%02x%02x", Color.red(color), Color.green(color), Color.blue(color))
+-    }
+   }
+ }
+diff --git a/node_modules/expo-navigation-bar/android/src/main/java/expo/modules/navigationbar/singletons/NavigationBar.kt b/node_modules/expo-navigation-bar/android/src/main/java/expo/modules/navigationbar/singletons/NavigationBar.kt
+index 131343a..54bff8e 100644
+--- a/node_modules/expo-navigation-bar/android/src/main/java/expo/modules/navigationbar/singletons/NavigationBar.kt
++++ b/node_modules/expo-navigation-bar/android/src/main/java/expo/modules/navigationbar/singletons/NavigationBar.kt
+@@ -1,7 +1,6 @@
+ package expo.modules.navigationbar.singletons
+ 
+ import android.app.Activity
+-import android.os.Build
+ import android.util.Log
+ import android.view.View
+ import androidx.core.view.WindowCompat
+@@ -16,7 +15,6 @@ object NavigationBar {
+     color: Int,
+     successCallback: () -> Unit
+   ) {
+-    activity.window.navigationBarColor = color
+     successCallback()
+   }
+ 
+@@ -47,12 +45,7 @@ object NavigationBar {
+     successCallback: () -> Unit,
+     failureCallback: (reason: String) -> Unit
+   ) {
+-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+-      activity.window.navigationBarDividerColor = color
+-      successCallback()
+-    } else {
+-      failureCallback("'setBorderColorAsync' is only available on Android API 28 or higher")
+-    }
++    successCallback()
+   }
+ 
+   @JvmStatic
