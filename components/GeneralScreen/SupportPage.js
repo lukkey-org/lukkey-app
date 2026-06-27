@@ -50,7 +50,7 @@ const SupportPage = () => {
       icon: isDarkMode
         ? require("../../assets/icon/Twitter.webp")
         : require("../../assets/icon/TwitterDark.webp"),
-      url: "https://x.com/LukkeyAG",
+      url: "https://x.com/Lukkeyswiss",
     },
     /*   {
       name: "Telegram",
