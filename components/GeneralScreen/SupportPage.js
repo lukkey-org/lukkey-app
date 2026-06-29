@@ -71,7 +71,7 @@ const SupportPage = () => {
       icon: isDarkMode
         ? require("../../assets/icon/Reddit.webp")
         : require("../../assets/icon/RedditDark.webp"),
-      url: "https://www.reddit.com/user/Ok_Bass_6829/",
+      url: "https://www.reddit.com/r/LukkeyOfficial",
     },
     {
       name: "Facebook",
