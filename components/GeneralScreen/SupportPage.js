@@ -78,7 +78,7 @@ const SupportPage = () => {
       icon: isDarkMode
         ? require("../../assets/icon/Facebook.webp")
         : require("../../assets/icon/FacebookDark.webp"),
-      url: "https://www.facebook.com/profile.php?id=61578769227902",
+      url: "https://www.facebook.com/profile.php?id=61581378220131",
     },
     {
       name: "YouTube",
