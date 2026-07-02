@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   Linking,
   Image,
+  ScrollView,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
@@ -46,19 +47,19 @@ const SupportPage = () => {
   // Social media links with corresponding icons and URLs
   const socialMediaLinks = [
     {
-      name: "Twitter",
+      name: "X",
       icon: isDarkMode
         ? require("../../assets/icon/Twitter.webp")
         : require("../../assets/icon/TwitterDark.webp"),
-      url: "https://x.com/Lukkeyswiss",
+      url: "https://x.com/lukkeyofficial",
     },
-    /*   {
+    {
       name: "Telegram",
       icon: isDarkMode
         ? require("../../assets/icon/Telegram.webp")
         : require("../../assets/icon/TelegramDark.webp"),
-      url: "https://t.me/+q9j351SAY8hlMDJl",
-    }, */
+      url: "https://t.me/lukkeyofficial",
+    },
     {
       name: "Discord",
       icon: isDarkMode
@@ -92,14 +93,29 @@ const SupportPage = () => {
       icon: isDarkMode
         ? require("../../assets/icon/Instagram.webp")
         : require("../../assets/icon/InstagramDark.webp"),
-      url: "https://www.instagram.com/lukkey_swiss/",
+      url: "https://www.instagram.com/lukkeyofficial",
     },
     {
-      name: "Tiktok",
+      name: "Threads",
+      icon: null,
+      url: "https://www.threads.com/@lukkeyofficial",
+    },
+    {
+      name: "LinkedIn",
+      icon: null,
+      url: "https://www.linkedin.com/company/lukkey-ag/",
+    },
+    {
+      name: "TikTok",
       icon: isDarkMode
         ? require("../../assets/icon/Tiktok.webp")
         : require("../../assets/icon/TiktokDark.webp"),
-      url: "https://www.tiktok.com/@lukkeyag",
+      url: "https://www.tiktok.com/@lukkeyofficial",
+    },
+    {
+      name: "GitHub",
+      icon: null,
+      url: "https://github.com/lukkey-org",
     },
     {
       name: t("Email Support"),
@@ -115,31 +131,36 @@ const SupportPage = () => {
       style={styles.container}
       colors={isDarkMode ? darkColors : lightColors}
     >
-      {socialMediaLinks.map((link, index) => (
-        <TouchableOpacity
-          key={index}
-          style={[styles.settingsItem, { borderBottomColor: borderColor }]}
-          onPress={() => Linking.openURL(link.url)}
-        >
-          {link.icon ? (
-            <Image
-              source={link.icon}
-              style={{ width: 20, height: 20 }}
-              resizeMode="contain"
-            />
-          ) : (
-            <View style={{ width: 20, height: 20 }} />
-          )}
-          <Text
-            style={[
-              styles.linkText,
-              { color: isDarkMode ? "#FFFFFF" : "#000000" },
-            ]}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.contentContainer}
+      >
+        {socialMediaLinks.map((link, index) => (
+          <TouchableOpacity
+            key={index}
+            style={[styles.settingsItem, { borderBottomColor: borderColor }]}
+            onPress={() => Linking.openURL(link.url)}
           >
-            {link.name}
-          </Text>
-        </TouchableOpacity>
-      ))}
+            {link.icon ? (
+              <Image
+                source={link.icon}
+                style={{ width: 20, height: 20 }}
+                resizeMode="contain"
+              />
+            ) : (
+              <View style={{ width: 20, height: 20 }} />
+            )}
+            <Text
+              style={[
+                styles.linkText,
+                { color: isDarkMode ? "#FFFFFF" : "#000000" },
+              ]}
+            >
+              {link.name}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
     </LinearGradient>
   );
 };
@@ -147,6 +168,11 @@ const SupportPage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  scrollView: {
+    width: "100%",
+  },
+  contentContainer: {
     alignItems: "center",
     paddingTop: 10,
     paddingLeft: 20,
